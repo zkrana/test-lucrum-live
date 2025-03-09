@@ -45,7 +45,7 @@ export default function TrainingPage() {
 
   useEffect(() => {
     const initPlayer = () => {
-      const player = new window.YT.Player('youtube-player', {
+      new window.YT.Player('youtube-player', {
         events: {
           onReady: (event: YT.PlayerEvent) => {
             window.ytPlayer = event.target;
@@ -611,7 +611,6 @@ export default function TrainingPage() {
             // Calculate overall progress percentage
             const completedVideos = progress.filter(p => p.completed && p.questionsCompleted).length;
             const totalVideos = videos.length;
-            const progressPercentage = Math.round((completedVideos / totalVideos) * 100);
         
             return (
               <button
