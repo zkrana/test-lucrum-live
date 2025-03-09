@@ -621,10 +621,6 @@ export default function TrainingPage() {
             const isLocked = index > 0 && (!previousVideoProgress?.completed || !previousVideoProgress?.questionsCompleted);
             const isCurrent = index === currentVideoIndex;
         
-            // Calculate overall progress percentage
-            const completedVideos = progress.filter(p => p.completed && p.questionsCompleted).length;
-            const totalVideos = videos.length;
-        
             return (
               <button
                 key={video.id}
