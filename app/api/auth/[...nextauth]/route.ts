@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions, Account, Profile } from "next-auth";
+import NextAuth, { NextAuthOptions, Account, Profile, User } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -117,7 +117,7 @@ const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }: { user: { email?: string; name?: string; id?: string; accessToken?: string; status?: string; hasDashboardAccess?: boolean }, account: Account | null, profile?: Profile }): Promise<boolean | any> {
+    async signIn({ user, account, profile }: { user: { email?: string; name?: string; id?: string; accessToken?: string; status?: string; hasDashboardAccess?: boolean }, account: Account | null, profile?: Profile }): Promise<boolean | CustomUser> {
       if (account?.provider === 'credentials') {
         return true;
       }
@@ -221,4 +221,5 @@ const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, authOptions };
+export default handler;
