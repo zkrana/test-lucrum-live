@@ -50,7 +50,10 @@ const authOptions: NextAuthOptions = {
         }
       
         try {
-          const apiUrl = 'https://admin.lucrumindustries.com/api/rest-api/auth/login.php';
+          const apiUrl =
+            process.env.NODE_ENV === "development"
+              ? "http://localhost:8000/api/rest-api/auth/login.php"
+              : "https://admin.lucrumindustries.com/api/rest-api/auth/login.php";
 
           const response = await fetch(apiUrl, {
             method: 'POST',
@@ -126,7 +129,10 @@ const authOptions: NextAuthOptions = {
       }
 
       try {
-        const apiUrl = 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php';
+        const apiUrl =
+            process.env.NODE_ENV === "development"
+              ? "http://localhost:8000/api/rest-api/auth/provider_login.php"
+              : "https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php";
 
         const loginPayload = {
           email: user.email,
@@ -183,7 +189,10 @@ const authOptions: NextAuthOptions = {
           id_token: account?.id_token
         };
 
-        const apiUrl ='https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php';
+        const apiUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:8000/api/rest-api/auth/provider_register.php"
+          : "https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php";
         const registerResponse = await fetch(apiUrl, {
           method: 'POST',
           headers: {

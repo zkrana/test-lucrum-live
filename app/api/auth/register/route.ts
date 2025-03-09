@@ -11,8 +11,11 @@ export async function POST(request: Request) {
     const isSocialAuth = authProvider === 'GOOGLE' || authProvider === 'APPLE';
     const isManualAuth = !isSocialAuth;
 
-    // let endpoint = 'https://admin.lucrumindustries.com/api/rest-api/auth/manual_register.php';
-    let endpoint = 'https://admin.lucrumindustries.com/api/rest-api/auth/manual_register.php';
+    const endpoint =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:8000/api/rest-api/auth/manual_register.php"
+      : "https://admin.lucrumindustries.com/api/rest-api/auth/manual_register.php";
+
     // Validate email
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
@@ -41,7 +44,12 @@ export async function POST(request: Request) {
       bodyData.password = password;
     } else {
       // Social signup (Google/Apple)
-      endpoint = 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php';
+     
+       endpoint =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:8000/api/rest-api/auth/provider_register.php"
+      : "https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php";
+      
       if (!providerAccountId || !access_token) {
         return NextResponse.json({ error: 'Provider account details are required' }, { status: 400 });
       }

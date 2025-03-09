@@ -29,7 +29,12 @@ export async function GET() {
 
     console.log("📍 Fetching CPA/Legal documents...");
 
-    const response = await fetch('https://admin.lucrumindustries.com/api/rest-api/cpa-legal/CpaLegalApi.php', {
+    const apiUrl =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:8000/api/rest-api/cpa-legal/CpaLegalApi.php"
+      : "https://admin.lucrumindustries.com/api/rest-api/cpa-legal/CpaLegalApi.php";
+
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`

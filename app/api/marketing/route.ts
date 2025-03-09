@@ -24,8 +24,14 @@ export async function GET() {
     }
     console.log('📍 Starting marketing content fetch...');
     console.log('🛠️ Token:', session?.user?.accessToken);
+
     
-    const response = await fetch('https://admin.lucrumindustries.com/api/rest-api/marketing/MarketingApi.php', {
+    const apiUrl =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:8000/api/rest-api/marketing/MarketingApi.php"
+      : "https://admin.lucrumindustries.com/api/rest-api/marketing/MarketingApi.php";
+    // Fetch marketing content from PHP backend with timeout
+    const response = await fetch( apiUrl , {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${session.user.accessToken}`
