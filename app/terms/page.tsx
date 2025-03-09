@@ -76,7 +76,7 @@ export default function TermsOfService() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">7. Disclaimer of Warranties</h2>
           <p className="text-gray-700 mb-4">
-            Our services are provided "as is" without any warranties, expressed or implied. We do not guarantee that our services will be uninterrupted, secure, or error-free.
+            Our services are provided &quot;as is&quot; without any warranties, expressed or implied. We do not guarantee that our services will be uninterrupted, secure, or error-free.
           </p>
         </section>
 
@@ -100,7 +100,7 @@ export default function TermsOfService() {
             For questions about these Terms of Service, please contact us at:
             <br />
             <a href="mailto:legal@lucrum.com" className="text-blue-600 hover:text-blue-800">
-              legal@lucrum.com
+              legal@lucrumindustries.com
             </a>
           </p>
         </section>

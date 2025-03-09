@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import React from 'react';
+import '../types/youtube';
 
 interface TrainingVideo {
   id: string;
@@ -41,6 +42,67 @@ export default function TrainingPage() {
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [incorrectAttempt, setIncorrectAttempt] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!(window.YT)) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    // Initialize player when API is ready
+    const initPlayer = () => {
+      new window.YT.Player('youtube-player', {
+        events: {
+          onReady: (event: YT.PlayerEvent) => {
+            window.ytPlayer = event.target;
+          },
+          onStateChange: async (event: YT.PlayerEvent) => {
+            // Video ended
+            if (event.data === window.YT.PlayerState.ENDED) {
+              try {
+                const response = await fetch('/api/training/progress/update', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    videoId: currentVideo.id,
+                    completed: true,
+                    questionsCompleted: 0
+                  })
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to update progress');
+                }
+
+                // Update local progress
+                setProgress(prev => [
+                  ...prev.filter(p => p.videoId !== currentVideo.id),
+                  { videoId: currentVideo.id, completed: true, questionsCompleted: 0 }
+                ]);
+
+                // Show questions if they exist
+                if (currentVideo.questions.length > 0) {
+                  setShowQuestions(true);
+                }
+              } catch (error) {
+                console.error('Error updating progress:', error);
+                setError('Failed to update progress');
+              }
+            }
+          }
+        }
+      });
+    };
+
+    // Add event listener for when YouTube API is ready
+    window.onYouTubeIframeAPIReady = initPlayer;
+  }, []);
+
+  const currentVideo = videos[currentVideoIndex];
 
   const handleQuizSubmission = async () => {
     const allCorrect = currentVideo.questions.every(
