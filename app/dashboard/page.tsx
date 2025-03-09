@@ -5,12 +5,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 
-interface TrainingProgress {
-  videoId: string;
-  completed: boolean;
-  questionsCompleted?: boolean;
-}
-
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

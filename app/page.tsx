@@ -9,7 +9,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaApple } from 'react-icons/fa';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');

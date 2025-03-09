@@ -81,7 +81,7 @@ export default function PrivacyPolicy() {
             If you have any questions about this Privacy Policy, please contact us at:
             <br />
             <a href="mailto:privacy@lucrum.com" className="text-blue-600 hover:text-blue-800">
-              privacy@lucrum.com
+              privacy@lucrumindust.com
             </a>
           </p>
         </section>
@@ -89,7 +89,7 @@ export default function PrivacyPolicy() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">7. Changes to This Policy</h2>
           <p className="text-gray-700">
-            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
+            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date.
           </p>
         </section>
 

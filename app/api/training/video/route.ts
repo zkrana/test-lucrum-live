@@ -4,14 +4,6 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import { createReadStream, statSync } from 'fs';
 import { join } from 'path';
 
-interface VideoStreamResponse {
-  type: 'youtube' | 'file';
-  url?: string;
-  stream?: NodeJS.ReadableStream;
-  headers?: Record<string, string | number>;
-  status: number;
-}
-
 export async function GET(request: Request) {
   try {
     // Check authentication

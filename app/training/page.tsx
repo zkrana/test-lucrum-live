@@ -44,22 +44,13 @@ export default function TrainingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!(window.YT)) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    }
-
-    // Initialize player when API is ready
     const initPlayer = () => {
-      new window.YT.Player('youtube-player', {
+      const player = new window.YT.Player('youtube-player', {
         events: {
           onReady: (event: YT.PlayerEvent) => {
             window.ytPlayer = event.target;
           },
           onStateChange: async (event: YT.PlayerEvent) => {
-            // Video ended
             if (event.data === window.YT.PlayerState.ENDED) {
               try {
                 const response = await fetch('/api/training/progress/update', {
@@ -70,41 +61,43 @@ export default function TrainingPage() {
                   body: JSON.stringify({
                     videoId: currentVideo.id,
                     completed: true,
-                    questionsCompleted: 0
+                    questionsCompleted: false
                   })
                 });
-
-                if (!response.ok) {
-                  throw new Error('Failed to update progress');
-                }
-
-                // Update local progress
-                setProgress(prev => [
-                  ...prev.filter(p => p.videoId !== currentVideo.id),
-                  { videoId: currentVideo.id, completed: true, questionsCompleted: 0 }
-                ]);
-
-                // Show questions if they exist
-                if (currentVideo.questions.length > 0) {
+                
+                if (response.ok) {
+                  const updatedProgress = progress.map(p =>
+                    p.videoId === currentVideo.id
+                      ? { ...p, completed: true }
+                      : p
+                  );
+                  setProgress(updatedProgress);
                   setShowQuestions(true);
+                  setSelectedAnswers([]);
+                  setIncorrectAttempt(false);
                 }
               } catch (error) {
-                console.error('Error updating progress:', error);
-                setError('Failed to update progress');
+                console.error('Error updating video progress:', error);
               }
             }
           }
         }
       });
     };
+    
+    if (!(window as Window & typeof globalThis).YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
 
-    // Add event listener for when YouTube API is ready
     window.onYouTubeIframeAPIReady = initPlayer;
-  }, []);
+  }, [currentVideo?.id, currentVideo?.questions?.length, progress, setProgress, setShowQuestions, setSelectedAnswers, setIncorrectAttempt]);
 
   const currentVideo = videos[currentVideoIndex];
 
-  const handleQuizSubmission = async () => {
+  const handleQuizSubmission = async (): Promise<void> => {
     const allCorrect = currentVideo.questions.every(
       (q, i) => {
         const correctIndex = q.correctAnswer ? q.correctAnswer.charCodeAt(0) - 'A'.charCodeAt(0) : -1;
@@ -257,7 +250,7 @@ export default function TrainingPage() {
     fetchData();
   }, [status, session, router]);
 
-  const handleVideoSelect = (index: number) => {
+  const handleVideoSelect = (index: number): void => {
     // Only allow selecting videos that are unlocked
     const previousVideosCompleted = index === 0 || progress.slice(0, index).every(
       (p) => p.completed && p.questionsCompleted
@@ -325,7 +318,7 @@ export default function TrainingPage() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you for signing up!</h2>
-          <p className="text-gray-600 mb-8">We're reviewing your registration and will notify you  via <span className='text-[#0075E2]'>email</span> once your access is approved.</p>
+          <p className="text-gray-600 mb-8">We&apos;re reviewing your registration and will notify you via <span className="text-[#0075E2]">email</span> once your access is approved.</p>
           <button
             onClick={() => signOut()}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#0075E2] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
@@ -397,25 +390,21 @@ export default function TrainingPage() {
                       referrerPolicy="strict-origin"
                       id="youtube-player"
                       onLoad={() => {
-                        // Load YouTube IFrame API if not already loaded
-                        if (!(window as any).YT) {
+                        if (!window.YT) {
                           const tag = document.createElement('script');
                           tag.src = 'https://www.youtube.com/iframe_api';
                           const firstScriptTag = document.getElementsByTagName('script')[0];
                           firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
                         }
 
-                        // Initialize player when API is ready
                         const initPlayer = () => {
-                          const player = new (window as any).YT.Player('youtube-player', {
+                          new window.YT.Player('youtube-player', {
                             events: {
-                              onReady: (event: any) => {
-                                // Store player instance for later use
-                                (window as any).ytPlayer = event.target;
+                              onReady: (event: YT.PlayerEvent) => {
+                                window.ytPlayer = event.target;
                               },
-                              onStateChange: async (event: any) => {
-                                // Video ended
-                                if (event.data === (window as any).YT.PlayerState.ENDED) {
+                              onStateChange: async (event: YT.PlayerEvent) => {
+                                if (event.data === window.YT.PlayerState.ENDED) {
                                   try {
                                     const response = await fetch('/api/training/progress/update', {
                                       method: 'POST',
@@ -430,15 +419,12 @@ export default function TrainingPage() {
                                     });
                                     
                                     if (response.ok) {
-                                      // Update local progress state
                                       const updatedProgress = progress.map(p =>
                                         p.videoId === currentVideo.id
                                           ? { ...p, completed: true }
                                           : p
                                       );
                                       setProgress(updatedProgress);
-                                      
-                                      // Show questions immediately after video ends
                                       setShowQuestions(true);
                                       setSelectedAnswers([]);
                                       setIncorrectAttempt(false);
@@ -452,11 +438,10 @@ export default function TrainingPage() {
                           });
                         };
                         
-                        // Call initPlayer when YT API is ready
-                        if ((window as any).YT && (window as any).YT.Player) {
+                        if (window.YT && window.YT.Player) {
                           initPlayer();
                         } else {
-                          (window as any).onYouTubeIframeAPIReady = initPlayer;
+                          window.onYouTubeIframeAPIReady = initPlayer;
                         }
                       }}
                     />

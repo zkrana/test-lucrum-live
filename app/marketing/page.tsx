@@ -145,10 +145,11 @@ export default function MarketingPage() {
             <div className="relative h-48 group overflow-hidden rounded-t-[20px]">
             {content.file_path && content.file_path.trim() !== "" ? (
                 <div className="relative w-full h-full">
-                  <img
+                  <Image
                     src={content.file_path}
                     alt={content.title}
                     className="object-cover w-full h-full"
+                    fill
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
