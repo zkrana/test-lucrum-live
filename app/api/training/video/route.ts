@@ -1,8 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import { createReadStream, statSync } from 'fs';
 import { join } from 'path';
+
+interface VideoStreamResponse {
+  type: 'youtube' | 'file';
+  url?: string;
+  stream?: NodeJS.ReadableStream;
+  headers?: Record<string, string | number>;
+  status: number;
+}
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +21,7 @@ export async function GET(request: Request) {
     }
 
     // Get video URL from query parameters
-    const url = request.nextUrl.searchParams.get('url');
+    const url = new URL(request.url).searchParams.get('url');
     if (!url) {
       return new NextResponse('Video URL is required', { status: 400 });
     }
@@ -55,7 +63,7 @@ export async function GET(request: Request) {
         'Content-Type': 'video/webm',
       };
 
-      return new NextResponse(stream as any, {
+      return new NextResponse(stream, {
         status: 206,
         headers,
       });
@@ -73,7 +81,7 @@ export async function GET(request: Request) {
       };
     
       const stream = createReadStream(videoPath);
-      return new NextResponse(stream as any, {
+      return new NextResponse(stream, {
         status: 200,
         headers,
       });

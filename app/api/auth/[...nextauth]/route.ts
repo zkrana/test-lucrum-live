@@ -3,6 +3,21 @@ import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
+import { Session } from 'next-auth';
+
+interface CustomUser {
+  id: string;
+  email: string;
+  name: string;
+  status?: string;
+  role?: string;
+  hasDashboardAccess?: boolean;
+  accessToken?: string;
+}
+
+interface CustomSession extends Session {
+  user?: CustomUser;
+}
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -85,7 +100,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT, user: any }): Promise<JWT> {
+    async jwt({ token, user }: { token: JWT, user: CustomUser | null }): Promise<JWT> {
       console.log("Callback JWT:", {
         user,
         token
@@ -101,7 +116,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token }: { session: any, token: JWT }) {
+    async session({ session, token }: { session: CustomSession, token: JWT }) {
        console.log("Callback session:", {
         session,
         token

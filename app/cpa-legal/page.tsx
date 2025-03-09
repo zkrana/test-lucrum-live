@@ -19,7 +19,6 @@ export default function CPALegalPage() {
   const [documents, setDocuments] = useState<CPADocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<'all' | 'cpa' | 'legal'>('all');
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
@@ -46,9 +45,9 @@ export default function CPALegalPage() {
         } else {
           throw new Error(result.error || 'Failed to fetch documents');
         }
-      } catch (err: any) {
-        console.error('❌ Document fetch error:', err);
-        setError(err.message);
+      } catch (error) {
+        console.error('❌ Document fetch error:', error);
+        setError(error instanceof Error ? error.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
