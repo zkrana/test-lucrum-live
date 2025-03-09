@@ -21,6 +21,7 @@ export default function CPALegalPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<'all' | 'cpa' | 'legal'>('all');
 
   useEffect(() => {
     const fetchDocuments = async () => {

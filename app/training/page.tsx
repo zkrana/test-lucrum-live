@@ -43,6 +43,10 @@ export default function TrainingPage() {
   const [incorrectAttempt, setIncorrectAttempt] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const currentVideo = videos[currentVideoIndex];
+  const totalVideos = videos.length;
+  const completedVideos = progress.filter(p => p.completed && p.questionsCompleted).length;
+
   useEffect(() => {
     const initPlayer = () => {
       new window.YT.Player('youtube-player', {
@@ -94,8 +98,6 @@ export default function TrainingPage() {
 
     window.onYouTubeIframeAPIReady = initPlayer;
   }, [currentVideo?.id, currentVideo?.questions?.length, progress, setProgress, setShowQuestions, setSelectedAnswers, setIncorrectAttempt]);
-
-  const currentVideo = videos[currentVideoIndex];
 
   const handleQuizSubmission = async (): Promise<void> => {
     const allCorrect = currentVideo.questions.every(
