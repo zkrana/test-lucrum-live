@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
@@ -21,29 +20,32 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user exists and has image data
-    const user = await prisma.user.findUnique({
-      where: { id: cleanUserId },
-      select: { image_data: true }
+    // Fetch image from PHP backend
+    const response = await fetch(`https://admin.lucrumindustries.com/api/rest-api/profile/ProfileApi.php?userId=${cleanUserId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.user.accessToken}`
+      }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+      }
+      return NextResponse.json({ error: 'Failed to fetch image' }, { status: response.status });
     }
 
-    if (!user.image_data) {
-      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
-    }
+    const imageBuffer = await response.arrayBuffer();
+    const imageData = Buffer.from(imageBuffer);
 
-    // Convert Buffer to Uint8Array if needed
-    const imageData = user.image_data instanceof Buffer ? user.image_data : Buffer.from(user.image_data);
-
-    // Determine content type based on magic numbers
-    let contentType = 'image/jpeg';
-    if (imageData[0] === 0x89 && imageData[1] === 0x50) {
-      contentType = 'image/png';
-    } else if (imageData[0] === 0x47 && imageData[1] === 0x49) {
-      contentType = 'image/gif';
+    // Determine content type from response headers or magic numbers
+    let contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) {
+      if (imageData[0] === 0x89 && imageData[1] === 0x50) {
+        contentType = 'image/png';
+      } else if (imageData[0] === 0x47 && imageData[1] === 0x49) {
+        contentType = 'image/gif';
+      }
     }
 
     // Set appropriate headers for image response

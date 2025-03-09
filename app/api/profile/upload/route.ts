@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -79,17 +78,28 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Update user's image_data in database with error handling
+    // Send image data to PHP backend
     try {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { image_data: buffer }
+      const formDataToSend = new FormData();
+      formDataToSend.append('image', new Blob([buffer]), 'profile.jpg');
+
+      const response = await fetch('https://admin.lucrumindustries.com/api/rest-api/profile/ProfileApi.php', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.user.accessToken}`
+        },
+        body: formDataToSend
       });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save image');
+      }
+    } catch (apiError) {
+      console.error('API error:', apiError);
       return NextResponse.json({
-        error: 'Database error',
-        message: 'Failed to save image to database'
+        error: 'API error',
+        message: apiError instanceof Error ? apiError.message : 'Failed to save image to server'
       }, { status: 500 });
     }
 
