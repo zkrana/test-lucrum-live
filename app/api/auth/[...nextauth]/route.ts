@@ -19,7 +19,7 @@ interface CustomSession extends Session {
   user?: CustomUser;
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
   session: {
@@ -31,7 +31,6 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       debug: true,
-      
     }),
     AppleProvider({
       clientId: process.env.APPLE_ID!,
@@ -51,10 +50,6 @@ export const authOptions: NextAuthOptions = {
         }
       
         try {
-          // const apiUrl = process.env.NODE_ENV === 'development'
-          //   ? 'https://admin.lucrumindustries.com/api/rest-api/auth/login.php'
-          //   : '/api/rest-api/auth/login.php';
-
           const apiUrl = process.env.NODE_ENV === 'development'
           ? 'https://admin.lucrumindustries.com/api/rest-api/auth/login.php'
           : '/api/rest-api/auth/login.php';
@@ -101,12 +96,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }: { token: JWT, user: CustomUser | null }): Promise<JWT> {
-      console.log("Callback JWT:", {
-        user,
-        token
-      });
       if (user) {
-        // console.log("Session JWT User:", user);
         token.accessToken = user?.accessToken;
         token.id = user.id;
         token.email = user.email;
@@ -117,10 +107,6 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }: { session: CustomSession, token: JWT }) {
-       console.log("Callback session:", {
-        session,
-        token
-       });
       if (session.user) {
         session.user.id = token.id;
         session.user.email = token.email;
@@ -131,39 +117,17 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }: { user: { email?: string; name?: string; id?: string; accessToken?: string; status?: string; hasDashboardAccess?: boolean }, account: Account | null, profile?: Profile }): Promise<boolean> {
+    async signIn({ user, account, profile }: { user: { email?: string; name?: string; id?: string; accessToken?: string; status?: string; hasDashboardAccess?: boolean }, account: Account | null, profile?: Profile }): Promise<boolean | any> {
       if (account?.provider === 'credentials') {
-        console.log('Credentials SignIn Callback Started');
-        console.log('User Data:', { email: user?.email, name: user?.name });
-        console.log('Account Data:', { provider: account?.provider, type: account?.type });
         return true;
       }
-
-      console.log('Google SignIn Process Started', { 
-        userPresent: !!user,
-        accountPresent: !!account,
-        profilePresent: !!profile
-      });
 
       if (!user || !profile || !account?.access_token) {
         console.error('Missing user, profile, or access_token in Google signIn callback');
         return false;
       }
 
-      console.log('Google SignIn Callback Started');
-      console.log('User Data:', { email: user?.email, name: user?.name });
-      console.log('Profile Data:', { sub: profile?.sub, email: profile?.email });
-      console.log('Account Data:', { 
-        provider: account?.provider,
-        type: account?.type,
-        access_token: account?.access_token ? 'Present' : 'Missing'
-      });
-
       try {
-        // const apiUrl = process.env.NODE_ENV === 'development'
-        // ? 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php'
-        // : '/api/rest-api/auth/login.php';
-
         const apiUrl = process.env.NODE_ENV === 'development'
         ? 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php'
         : '/api/rest-api/auth/login.php';
@@ -188,28 +152,22 @@ export const authOptions: NextAuthOptions = {
         let loginResponseData;
         try {
           loginResponseData = await loginResponse.text();
-          loginResponseData = loginResponseData ? JSON.parse(loginResponseData) :  await loginResponse?.Body?.json();
+          loginResponseData = loginResponseData ? JSON.parse(loginResponseData) : await loginResponse?.Body?.json();
         } catch (error) {
           console.error('Failed to read login API response:', error);
         }
-        console.log('PHP API Login Response:', {
-          status: loginResponse.status,
-          statusText: loginResponse.statusText,
-          headers: Object.fromEntries(loginResponse.headers.entries()),
-          data: loginResponseData
-        });
+
         if (loginResponse.ok) {
           if (!loginResponseData.user || !loginResponseData.token) {
             console.error('Invalid response format from PHP API:', loginResponseData);
             return false;
           } else {
-            // Attach the user data and token to the user object
             user.id = loginResponseData.user.id;
             user.accessToken = loginResponseData.token;
             user.status = loginResponseData.user.status || 'active';
             user.hasDashboardAccess = loginResponseData.user.hasDashboardAccess || false;
-            user.email = loginResponseData.user.email || user.email; // Ensure email is set from response
-            user.name = loginResponseData.user.name || user.name; // Ensure name is set from response
+            user.email = loginResponseData.user.email || user.email;
+            user.name = loginResponseData.user.name || user.name;
             return user;
           }
         }
@@ -219,7 +177,6 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        console.log('Attempting to register Google user:', { email: user.email, name: user.name, sub: profile.sub });
         const registerPayload = {
           email: user.email,
           name: user.name,
@@ -229,9 +186,7 @@ export const authOptions: NextAuthOptions = {
           expires_at: account?.expires_at,
           id_token: account?.id_token
         };
-        console.log('Sending data to PHP backend:', registerPayload);
 
-        // const apiUrl ='https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php';
         const apiUrl ='https://admin.lucrumindustries.com/api/rest-api/auth/provider_register.php';
         const registerResponse = await fetch(apiUrl, {
           method: 'POST',
@@ -243,37 +198,27 @@ export const authOptions: NextAuthOptions = {
         });
 
         const responseData = await registerResponse.json();
-        console.log('PHP API Register Response:', {
-          status: registerResponse.status,
-          statusText: registerResponse.statusText,
-          headers: Object.fromEntries(registerResponse.headers.entries()),
-          data: responseData
-        });
 
         if (!registerResponse.ok || !responseData.user || !responseData.token) {
           console.error('Invalid response format from PHP API:', responseData);
           return false;
         }
 
-        // Attach the user data and token to the user object
         user.id = responseData.user.id;
         user.accessToken = responseData.token;
         user.status = responseData.user.status || 'active';
         user.hasDashboardAccess = responseData.user.hasDashboardAccess || false;
-        user.email = responseData.user.email || user.email; // Ensure email is set from response
-        user.name = responseData.user.name || user.name; // Ensure name is set from response
+        user.email = responseData.user.email || user.email;
+        user.name = responseData.user.name || user.name;
         return user;
       } catch (error) {
         console.error('Failed to read register API response:', error);
         return false;
       }
     }
-  },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
   }
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
