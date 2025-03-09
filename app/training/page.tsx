@@ -337,8 +337,6 @@ export default function TrainingPage() {
     );
   }
 
-  const currentVideo = videos[currentVideoIndex];
-
   return (
     <div className="w-full min-h-screen bg-gray-100">
       {/* Progress Bar */}
