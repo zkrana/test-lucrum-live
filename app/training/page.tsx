@@ -600,6 +600,19 @@ export default function TrainingPage() {
       {/* Right side - Video List */}
       <div className="w-full lg:w-96 bg-white lg:border-l border-t lg:border-t-0 border-gray-200 p-4 lg:p-6 overflow-y-auto rounded-lg lg:rounded-[20px]">
         <h3 className="text-xl font-bold mb-6">Training Videos</h3>
+        {/* Add overall progress indicator */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-600">Overall Progress</span>
+            <span className="text-sm font-medium">{completedVideos} of {totalVideos} completed</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              style={{ width: `${(completedVideos / totalVideos) * 100}%` }}
+            />
+          </div>
+        </div>
         <div className="space-y-4">
           {videos.map((video, index) => {
             const videoProgress = progress.find((p) => p.videoId === video.id);
