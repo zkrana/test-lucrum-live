@@ -1,23 +1,16 @@
 import React, { useState } from 'react';
 import { PlayIcon } from '@heroicons/react/24/solid';
+import Image from 'next/image';
 
 interface VideoCardProps {
   title: string;
   description?: string;
   videoUrl: string;
   thumbnailUrl?: string;
-  questions?: {
-    id: string;
-    question: string;
-    options: string[];
-    orderNumber: number;
-    type: string;
-    correctAnswer: string;
-  }[];
   onVideoComplete?: () => void;
 }
 
-export default function VideoCard({ title, description, videoUrl, thumbnailUrl, questions, onVideoComplete }: VideoCardProps) {
+export default function VideoCard({ title, description, videoUrl, thumbnailUrl, onVideoComplete }: VideoCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
@@ -42,9 +35,11 @@ export default function VideoCard({ title, description, videoUrl, thumbnailUrl, 
       >
         {thumbnailUrl ? (
           <>
-            <img
+            <Image
               src={thumbnailUrl}
               alt={title}
+              width={640}
+              height={360}
               className="w-full h-full object-cover"
             />
             {!isPlaying && (

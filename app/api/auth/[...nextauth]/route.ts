@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           console.error("Missing credentials");
           throw new Error("Invalid credentials");
@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
               password: credentials.password
             })
           });
-          let data = await response.text() as any;
+          let data = await response.text();
           console.log("API Response:", data);
           data = (data ? JSON.parse(data) : await response.json());
           console.log("API Response:", data);
@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: Record<string, any>): Promise<JWT> {
+    async jwt({ token, user }: { token: JWT, user: any }): Promise<JWT> {
       console.log("Callback JWT:", {
         user,
         token
@@ -101,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token }: Record<string, any>) {
+    async session({ session, token }: { session: any, token: JWT }) {
        console.log("Callback session:", {
         session,
         token
@@ -116,7 +116,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }: { user: any, account: Account | null, profile?: Profile }): Promise<boolean> {
+    async signIn({ user, account, profile }: { user: { email?: string; name?: string; id?: string; accessToken?: string; status?: string; hasDashboardAccess?: boolean }, account: Account | null, profile?: Profile }): Promise<boolean> {
       if (account?.provider === 'credentials') {
         console.log('Credentials SignIn Callback Started');
         console.log('User Data:', { email: user?.email, name: user?.name });

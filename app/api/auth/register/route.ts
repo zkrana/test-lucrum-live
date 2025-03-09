@@ -17,7 +17,18 @@ export async function POST(request: Request) {
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
-    let bodyData: any = { 
+    interface BodyData {
+      name: string;
+      email: string;
+      password?: string;
+      googleId?: string;
+      access_token?: string;
+      refresh_token?: string;
+      expires_at?: number;
+      id_token?: string;
+    }
+
+    let bodyData: BodyData = { 
       name: name || email.split('@')[0], // Default name if missing 
       email 
     };

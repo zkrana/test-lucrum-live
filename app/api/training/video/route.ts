@@ -4,7 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 import { createReadStream, statSync } from 'fs';
 import { join } from 'path';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
