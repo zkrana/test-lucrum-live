@@ -50,9 +50,7 @@ const authOptions: NextAuthOptions = {
         }
       
         try {
-          const apiUrl = process.env.NODE_ENV === 'development'
-          ? 'https://admin.lucrumindustries.com/api/rest-api/auth/login.php'
-          : '/api/rest-api/auth/login.php';
+          const apiUrl = 'https://admin.lucrumindustries.com/api/rest-api/auth/login.php';
 
           const response = await fetch(apiUrl, {
             method: 'POST',
@@ -128,9 +126,7 @@ const authOptions: NextAuthOptions = {
       }
 
       try {
-        const apiUrl = process.env.NODE_ENV === 'development'
-        ? 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php'
-        : '/api/rest-api/auth/login.php';
+        const apiUrl = 'https://admin.lucrumindustries.com/api/rest-api/auth/provider_login.php';
 
         const loginPayload = {
           email: user.email,
