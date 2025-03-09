@@ -21,7 +21,6 @@ export default function CPALegalPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<'all' | 'cpa' | 'legal'>('all');
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -86,10 +85,6 @@ export default function CPALegalPage() {
     );
   }
 
-  const filteredDocuments = selectedType === 'all'
-    ? documents
-    : documents.filter((doc) => doc.category === selectedType);
-
   return (
     <div className="container mx-auto">
       <div className="mb-2">
@@ -101,7 +96,7 @@ export default function CPALegalPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDocuments.map((doc) => (
+        {documents.map((doc) => (
           <div key={doc.id} className="bg-white rounded-[20px] p-2 overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
             <div className="relative rounded-t-[20px] h-48 bg-gray-50 flex items-center justify-center group">
               <div className="text-gray-400 group-hover:text-gray-500 transition-colors">
