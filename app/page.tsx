@@ -190,13 +190,13 @@ export default function Home() {
                   <FcGoogle className="h-5 w-5" />
                   Continue with Google
                 </button>
-                <button
+                {/* <button
                   onClick={() => handleOAuthSignIn('apple')}
                   className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <FaApple className="h-5 w-5" />
                   Continue with Apple
-                </button>
+                </button> */}
               </div>
             </Tab.Panel>
 
@@ -255,13 +255,13 @@ export default function Home() {
                   <FcGoogle className="h-5 w-5" />
                   Sign up with Google
                 </button>
-                <button
+                {/* <button
                   onClick={() => handleOAuthSignIn('apple')}
                   className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   <FaApple className="h-5 w-5" />
                   Sign up with Apple
-                </button>
+                </button> */}
               </div>
             </Tab.Panel>
           </Tab.Panels>

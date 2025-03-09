@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const phpApiUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
-      : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
+      : "http://localhost:8000/api/rest-api/training/TrainingApi.php";
 
     const response = await fetch(phpApiUrl, {
       method: 'POST',
