@@ -98,8 +98,8 @@ export async function GET() {
       description: video.description,
       videoUrl: video.videoUrl,
       orderNumber: video.orderNumber,
-      completed: video.completed === 1,
-      questionsCompleted: video.questionsCompleted,
+      completed: Boolean(Number(video.completed)),  // ✅ FIXED
+      questionsCompleted: Number(video.questionsCompleted),  // Ensure it's a number
       updatedAt: video.updatedAt,
       questions: video.questions?.map(q => ({
         id: q.id,

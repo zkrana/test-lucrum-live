@@ -107,16 +107,16 @@ export default function MarketingPage() {
           <div className={commonCardClasses}>
             <div className="relative h-48 rounded-t-[20px] overflow-hidden ">
               <div className="relative w-full h-full ">
-                {content.file_path && content.file_path.trim() !== "" ? (
-                  <div className="relative w-full h-full rounded-t-[20px]">
-                    <Image
-                      src={content.file_path}
-                      alt={content.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
+              {content.file_path && content.file_path.trim() !== "" ? (
+                    <div className="relative w-full h-full rounded-t-[20px]">
+                      <Image
+                        src={`https://admin.lucrumindustries.com/public/uploads/${content.file_path}`}
+                        alt={content.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200">
                     <svg
                       className="w-12 h-12 text-gray-400"
