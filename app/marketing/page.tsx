@@ -110,7 +110,7 @@ export default function MarketingPage() {
               {content.file_path && content.file_path.trim() !== "" ? (
                     <div className="relative w-full h-full rounded-t-[20px]">
                       <Image
-                        src={`https://admin.lucrumindustries.com/public/uploads/${content.file_path}`}
+                        src={`https://admin.lucrumindustries.com/public/uploads/${content.file_path.replace(/^https?:\/\/[^/]+\/public\/uploads\//i, '')}`}
                         alt={content.title}
                         fill
                         className="object-cover"

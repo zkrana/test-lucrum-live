@@ -56,33 +56,10 @@ export default function TrainingPage() {
           },
           onStateChange: async (event: YT.PlayerEvent) => {
             if (event.data === window.YT.PlayerState.ENDED) {
-              try {
-                const response = await fetch('/api/training/progress/update', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    videoId: currentVideo.id,
-                    completed: true,
-                    questionsCompleted: false
-                  })
-                });
-                
-                if (response.ok) {
-                  const updatedProgress = progress.map(p =>
-                    p.videoId === currentVideo.id
-                      ? { ...p, completed: true }
-                      : p
-                  );
-                  setProgress(updatedProgress);
-                  setShowQuestions(true);
-                  setSelectedAnswers([]);
-                  setIncorrectAttempt(false);
-                }
-              } catch (error) {
-                console.error('Error updating video progress:', error);
-              }
+              // Only show questions after video completion, don't mark as completed yet
+              setShowQuestions(true);
+              setSelectedAnswers([]);
+              setIncorrectAttempt(false);
             }
           }
         }

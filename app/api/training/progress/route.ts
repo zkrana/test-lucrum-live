@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 
+// Cache responses for 5 minutes
+export const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export async function GET() {
   try {
     // Check authentication
@@ -10,12 +14,23 @@ export async function GET() {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Fetch user's training progress from PHP backend with timeout
+    // Validate user access token
+    if (!session.user.accessToken) {
+      return NextResponse.json({ error: 'Invalid access token' }, { status: 401 });    
+    }
+
+    // Check cache first
+    const cacheKey = session.user.id;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+      return NextResponse.json(cachedData.data);
+    }
+
+    // Fetch user's training progress from PHP backend with increased timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
-      
       const apiUrl = 
       process.env.NODE_ENV === "development"
         ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
@@ -57,6 +72,43 @@ export async function GET() {
       let progressData;
       try {
         progressData = await response.json();
+        
+        // Validate and process the progress data
+        if (Array.isArray(progressData)) {
+          let lastCompletedOrder = -1;
+          
+          progressData = progressData.map(item => {
+            const questionsCompleted = parseInt(item.questionsCompleted, 10) || 0;
+            const orderNumber = parseInt(item.orderNumber, 10);
+            const isCompleted = questionsCompleted === 2;
+            
+            // Update lastCompletedOrder if this video is completed
+            if (isCompleted) {
+              lastCompletedOrder = Math.max(lastCompletedOrder, orderNumber);
+            }
+            
+            // A video is unlocked if:
+            // 1. It's the first video (orderNumber === 1)
+            // 2. The previous video is completed (lastCompletedOrder >= orderNumber - 1)
+            const isUnlocked = orderNumber === 1 || lastCompletedOrder >= orderNumber - 1;
+            
+            return {
+              ...item,
+              completed: isCompleted ? "1" : "0",
+              questionsCompleted,
+              orderNumber,
+              isLocked: !isUnlocked,
+              questions: Array.isArray(item.questions) ? item.questions : []
+            };
+          });
+        }
+
+        // Cache the successful response
+        cache.set(cacheKey, {
+          data: progressData,
+          timestamp: Date.now()
+        });
+
       } catch (parseError) {
         console.error('Error parsing progress response:', parseError);
         throw new Error('Invalid response format from server');

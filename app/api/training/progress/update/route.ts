@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
+import { cache } from '../route';
 
 export async function POST(request: Request) {
   try {
@@ -11,24 +12,21 @@ export async function POST(request: Request) {
     }
 
     // Parse request body
-    const { videoId, completed, questionsCompleted } = await request.json();
+    const { videoId, completed } = await request.json();
 
-    // Normalize `questionsCompleted`
-    let normalizedQuestionsCompleted = questionsCompleted;
-    if (typeof questionsCompleted === 'boolean') {
-      normalizedQuestionsCompleted = questionsCompleted ? 2 : 0;
-    }
+    // Always set questionsCompleted to 2 when video is completed
+    const normalizedQuestionsCompleted = completed ? 2 : 0;
 
     // Validate request data
-    if (!videoId || typeof completed !== 'boolean' || typeof normalizedQuestionsCompleted !== 'number' || normalizedQuestionsCompleted < 0 || normalizedQuestionsCompleted > 2) {
-      return new NextResponse('Invalid request body. questionsCompleted must be a number between 0 and 2', { status: 400 });
+    if (!videoId || typeof completed !== 'boolean') {
+      return new NextResponse('Invalid request body', { status: 400 });
     }
 
     // Send request to PHP API
     const phpApiUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
-      : "http://localhost:8000/api/rest-api/training/TrainingApi.php";
+      : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
 
     const response = await fetch(phpApiUrl, {
       method: 'POST',
@@ -65,7 +63,17 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Clear the cache after successful update
+    const cacheKey = session.user.id;
+    if (cache.has(cacheKey)) {
+      cache.delete(cacheKey);
+    }
+    
+    return NextResponse.json({
+      success: true,
+      data: data
+    });
 
   } catch (error) {
     console.error('Error updating training progress:', error);
