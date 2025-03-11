@@ -103,8 +103,10 @@ export default function TrainingPage() {
             questionsCompleted: true
           }),
         });
-  
-        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error('Failed to update progress');
+        }
   
         // Fetch the updated progress
         const updatedProgressResponse = await fetch('/api/training/progress');
@@ -115,10 +117,16 @@ export default function TrainingPage() {
           setShowQuestions(false);
   
           // Check if this was the last video and all questions are completed
-          if (result.hasDashboardAccess && currentVideoIndex === videos.length - 1) {
+          const allVideosCompleted = updatedProgressData.every((p: VideoProgress) => p.completed && p.questionsCompleted);
+          if (allVideosCompleted) {
             // Show final completion message
             const finalMessage = document.createElement('div');
-            finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
+            finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]';
+            finalMessage.style.position = 'fixed';
+            finalMessage.style.top = '0';
+            finalMessage.style.left = '0';
+            finalMessage.style.right = '0';
+            finalMessage.style.bottom = '0';
             finalMessage.innerHTML = `
               <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
                 <div class="text-center" style="display: flex; flex-direction: column; gap: 10px;">
@@ -138,6 +146,16 @@ export default function TrainingPage() {
               </div>
             `;
             document.body.appendChild(finalMessage);
+            // Prevent scrolling when modal is shown
+            document.body.style.overflow = 'hidden';
+            // Add click handler to close modal when clicking outside
+            finalMessage.addEventListener('click', (e) => {
+              if (e.target === finalMessage) {
+                document.body.removeChild(finalMessage);
+                document.body.style.overflow = '';
+                window.location.href = '/dashboard';
+              }
+            });
             return;
           }
   

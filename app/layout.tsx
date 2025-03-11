@@ -34,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${manrope.variable} font-sans min-h-screen antialiased px-3 md:px-0`}>
+      <body className={`${manrope.variable} font-sans min-h-screen antialiased`}>
         <Providers session={session}>
           <RootLayoutClient publicPaths={publicPaths}>{children}</RootLayoutClient>
         </Providers>
