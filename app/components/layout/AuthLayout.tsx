@@ -79,7 +79,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center mr-[100px]">
                 <Link href="/" className="text-2xl font-bold text-gray-900">
-                  Lucrum
+                <Image
+                    src="https://admin.lucrumindustries.com/public/uploads/logo.png"
+                    alt="Lucrum Logo"
+                    width={200} // Set appropriate width
+                    height={100} // Set appropriate height
+                    priority // Loads image faster
+                  />
                 </Link>
               </div>
               <div className="hidden lg:ml-6 lg:flex lg:space-x-8">

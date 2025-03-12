@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import { FcGoogle } from 'react-icons/fc';
+import Image from 'next/image';
 
 export default function Home() {
   const { status } = useSession();
@@ -112,7 +113,15 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Lucrum</h1>
+         <div className='flex justify-center'>
+          <Image
+            src="https://admin.lucrumindustries.com/public/uploads/logo.png"
+            alt="Lucrum Logo"
+            width={200} // Set appropriate width
+            height={100} // Set appropriate height
+            priority // Loads image faster
+          />
+         </div>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to access your account
           </p>

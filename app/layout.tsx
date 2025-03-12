@@ -15,14 +15,17 @@ const publicPaths = ['/', '/terms', '/privacy'];
 export const metadata = {
   title: 'Lucrum Industries',
   description: 'A modern business training and resource platform',
+  icons: {
+    icon: "https://admin.lucrumindustries.com/public/uploads/favicon.png",
+  },
   robots: {
     index: false,
     follow: false,
     googleBot: {
       index: false,
-      follow: false
-    }
-  }
+      follow: false,
+    },
+  },
 };
 
 export default async function RootLayout({
