@@ -78,8 +78,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <div className="flex justify-between h-16 mt-12">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center mr-[100px]">
-                <Link href="/" className="text-2xl font-bold text-gray-900">
+                <Link href="/" className="text-2xl font-bold text-gray-900 h-[65px] ">
                 <Image
+                className='object-contain h-[82%] mt-[4px]'
                     src="https://admin.lucrumindustries.com/public/uploads/logo.png"
                     alt="Lucrum Logo"
                     width={200} // Set appropriate width
@@ -275,13 +276,6 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                       onClick={() => setIsProfileOpen(false)}
                     >
                       Your Profile
-                    </Link>
-                    <Link
-                      href="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      Settings
                     </Link>
                     <button
                       onClick={() => signOut({ callbackUrl: '/' })}

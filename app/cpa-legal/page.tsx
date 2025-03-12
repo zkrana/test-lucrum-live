@@ -126,11 +126,6 @@ export default function CPALegalPage() {
 
               <h3 className="text-xl font-semibold text-[#0175E1] mb-2 line-clamp-2">{doc.title}</h3>
               <p className="text-gray-600 mb-4 line-clamp-3">{doc.description}</p>
-
-              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                <span className="text-sm text-gray-500">{new Date(doc.created_at).toLocaleDateString()}</span>
-                <span className="text-sm text-gray-500">{doc.downloads} downloads</span>
-              </div>
             </div>
           </div>
         ))}
