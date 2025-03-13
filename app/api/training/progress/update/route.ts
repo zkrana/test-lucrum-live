@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import { cache } from '../route';
 
 export async function POST(request: Request) {
   try {
@@ -24,9 +23,9 @@ export async function POST(request: Request) {
 
     // Send request to PHP API
     const phpApiUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
-      : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
+        : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
 
     const response = await fetch(phpApiUrl, {
       method: 'POST',
@@ -47,13 +46,11 @@ export async function POST(request: Request) {
 
     // Handle response
     if (!response.ok) {
-      // Try to parse error response as JSON first
       let errorMessage;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || 'Failed to update training progress';
       } catch {
-        // If JSON parsing fails, use text response
         errorMessage = await response.text();
       }
       return NextResponse.json(
@@ -63,13 +60,27 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    
-    // Clear the cache after successful update
-    const cacheKey = session.user.id;
-    if (cache.has(cacheKey)) {
-      cache.delete(cacheKey);
+
+    // Fetch fresh data directly from the PHP backend (no caching)
+    const freshDataResponse = await fetch(phpApiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.user.accessToken}`,
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+
+    if (freshDataResponse.ok) {
+      const freshData = await freshDataResponse.json();
+      return NextResponse.json({
+        success: true,
+        data: freshData
+      });
     }
-    
+
     return NextResponse.json({
       success: true,
       data: data

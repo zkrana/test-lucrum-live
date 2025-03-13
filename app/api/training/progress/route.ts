@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
 
-// Cache responses for 5 minutes
-export const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
-
 export async function GET() {
   try {
     // Check authentication
@@ -19,23 +15,16 @@ export async function GET() {
       return NextResponse.json({ error: 'Invalid access token' }, { status: 401 });    
     }
 
-    // Check cache first
-    const cacheKey = session.user.id;
-    const cachedData = cache.get(cacheKey);
-    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
-      return NextResponse.json(cachedData.data);
-    }
-
     // Fetch user's training progress from PHP backend with increased timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
 
     try {
       const apiUrl = 
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
-        : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
-        
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
+          : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -102,12 +91,6 @@ export async function GET() {
             };
           });
         }
-
-        // Cache the successful response
-        cache.set(cacheKey, {
-          data: progressData,
-          timestamp: Date.now()
-        });
 
       } catch (parseError) {
         console.error('Error parsing progress response:', parseError);
