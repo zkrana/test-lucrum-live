@@ -8,6 +8,10 @@ import './globals.css';
 const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-manrope',
+  display: 'swap',
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+  preload: true,
+  adjustFontFallback: true
 });
 
 const publicPaths = ['/', '/terms', '/privacy'];
