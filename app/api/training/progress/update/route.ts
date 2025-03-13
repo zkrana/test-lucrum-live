@@ -12,15 +12,15 @@ export async function POST(request: Request) {
     }
 
     // Parse request body
-    const { videoId, completed } = await request.json();
-
-    // Always set questionsCompleted to 2 when video is completed
-    const normalizedQuestionsCompleted = completed ? 2 : 0;
+    const { videoId, completed, questionsCompleted } = await request.json();
 
     // Validate request data
     if (!videoId || typeof completed !== 'boolean') {
       return new NextResponse('Invalid request body', { status: 400 });
     }
+
+    // Only allow setting questionsCompleted to 2 when explicitly provided
+    const normalizedQuestionsCompleted = questionsCompleted ?? (completed ? 2 : 0);
 
     // Send request to PHP API
     const phpApiUrl =
