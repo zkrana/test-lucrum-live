@@ -34,7 +34,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         if (response.ok) {
           const progress = await response.json() as { videoId: string; completed: string; questionsCompleted: number }[];
           const completedVideos = progress.filter(video => video.completed === "1" && video.questionsCompleted === 2);
-          setHasCompletedTraining(completedVideos.length === 3);
+          setHasCompletedTraining(completedVideos.length === 2);
         }
       } catch (error) {
         console.error('Error checking training progress:', error);
