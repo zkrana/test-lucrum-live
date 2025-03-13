@@ -18,6 +18,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [imageKey, setImageKey] = useState<string>('');
   const [hasCompletedTraining, setHasCompletedTraining] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkTrainingProgress = async () => {
@@ -167,13 +168,30 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-4 border-l-[7px] border-l-[#F6F6F6] pl-2">
+            <div className="flex items-center lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex relative z-[99999] items-center justify-center p-3 rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors"
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMobileMenuOpen ? (
+                  <svg className="block h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div className="flex items-center space-x-4 border-l-[7px] border-l-[#F6F6F6] pl-2 lg:block hidden">
               {!isApproved && (
                 <span className="px-3 py-1 text-sm text-yellow-800 bg-yellow-100 rounded-full">
                   Pending Approval
                 </span>
               )}
-              <div className="relative">
+              <div className="relative mt-[10px]">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-3 focus:outline-none"
@@ -291,6 +309,138 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           </div>
         </div>
       </nav>
+
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-black bg-opacity-50">
+          <div className="bg-white h-full w-64 shadow-xl">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300">
+                  {session?.user?.id ? (
+                    <>
+                      <Image
+                        src={`/api/profile/image?userId=${session.user.id}${imageKey ? `&t=${imageKey}` : ''}`}
+                        alt="Profile"
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          (target.parentElement?.querySelector('.fallback-avatar') as HTMLElement).style.display = 'flex';
+                        }}
+                      />
+                      <div 
+                        className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-lg font-semibold fallback-avatar"
+                        style={{ display: 'none' }}
+                      >
+                        {session?.user?.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-lg font-semibold">
+                      {session?.user?.name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-700">{session?.user?.name || 'User'}</div>
+                  <div className="text-sm text-gray-500">{session?.user?.email || 'User'}</div>
+                </div>
+              </div>
+              {/* <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button> */}
+            </div>
+            <div className="px-4 py-6 space-y-4">
+              {!isApproved || session?.user?.status === 'pending' ? (
+                <>
+                  <span className="block text-sm text-gray-300 cursor-not-allowed">Training</span>
+                  <span className="block text-sm text-gray-300 cursor-not-allowed">Dashboard</span>
+                  <span className="block text-sm text-gray-300 cursor-not-allowed">Marketing</span>
+                  <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span>
+                </>
+              ) : (
+                <>
+                  {isAdmin && session?.user?.status === 'active' && (
+                    <Link
+                      href="/admin"
+                      className={`block text-sm ${pathname === '/admin' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  {session?.user?.status === 'active' && (
+                    <>
+                      {hasCompletedTraining ? (
+                        <Link
+                          href="/dashboard"
+                          className={`block text-sm ${pathname === '/dashboard' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
+                      ) : (
+                        <span className="block text-sm text-gray-300 cursor-not-allowed">Dashboard</span>
+                      )}
+                      <Link
+                        href="/training"
+                        className={`block text-sm ${pathname === '/training' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Training
+                      </Link>
+                      {hasCompletedTraining ? (
+                        <>
+                          <Link
+                            href="/marketing"
+                            className={`block text-sm ${pathname === '/marketing' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            Marketing
+                          </Link>
+                          <Link
+                            href="/cpa-legal"
+                            className={`block text-sm ${pathname === '/cpa-legal' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            CPA/Legal
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block text-sm text-gray-300 cursor-not-allowed">Marketing</span>
+                          <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <Link
+                  href="/profile"
+                  className="block text-sm text-gray-700 hover:text-blue-500"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Your Profile
+                </Link>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="block w-full text-left mt-2 text-sm text-red-600 hover:text-red-700"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="py-6 bg-gray-100">
         <div className="max-w-[1160px] mx-auto">
