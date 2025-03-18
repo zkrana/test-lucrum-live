@@ -26,21 +26,33 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         const response = await fetch('/api/training/progress', {
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
           },
-          credentials: 'include'
+          credentials: 'include',
         });
-    
-        if (response.ok) {
-          const progress = await response.json() as { videoId: string; completed: string; questionsCompleted: number }[];
-          const completedVideos = progress.filter(video => video.completed === "1" && video.questionsCompleted === 2);
-          setHasCompletedTraining(completedVideos.length > 0 && completedVideos.length === progress.length);
-        }
+  
+        if (!response.ok) throw new Error('Failed to fetch progress');
+  
+        const progress = await response.json() as {
+          videoId: string;
+          completed: string;
+          questionsCompleted: number;
+          totalQuestions: number;
+        }[];
+  
+        // Ensure totalQuestions is treated as a number
+        const completedVideos = progress.filter(video => 
+          video.completed === "1" && video.questionsCompleted === Number(video.totalQuestions)
+        );
+  
+        // Training is complete if ALL videos meet the criteria
+        setHasCompletedTraining(completedVideos.length === progress.length);
+  
       } catch (error) {
         console.error('Error checking training progress:', error);
       }
     };
-
+  
     if (session?.user) {
       checkTrainingProgress();
     }
@@ -103,9 +115,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                     <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
                       Marketing
                     </span>
-                    <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
+                    {/* <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
                       CPA/Legal
-                    </span>
+                    </span> */}
                   </>
                 ) : (
                   <>
@@ -145,21 +157,21 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                             >
                               Marketing
                             </Link>
-                            <Link
+                            {/* <Link
                               href="/cpa-legal"
                               className={`${pathname === '/cpa-legal' ? 'before:content-[""] before:absolute before:bottom-0 before:left-0 before:w-[75px] before:h-[7px] before:rounded-t-[10px] before:bg-[#0075E2] before:left-[14%] before-transform -before-translate-x-1/2 before:border-[#0075E2]  text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} w-[104px] justify-center inline-flex items-center px-1 pt-1 border-b-2 text-sm 2xl:text-[20px] 2xl:leading-[28px] font-medium relative`}
                             >
                               CPA/Legal
-                            </Link>
+                            </Link> */}
                           </>
                         ) : (
                           <>
                             <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
                               Marketing
                             </span>
-                            <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
+                            {/* <span className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-300 cursor-not-allowed">
                               CPA/Legal
-                            </span>
+                            </span> */}
                           </>
                         )}
                       </>
@@ -268,13 +280,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                           >
                             Marketing
                           </Link>
-                          <Link
+                          {/* <Link
                             href="/cpa-legal"
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileOpen(false)}
                           >
                             CPA/Legal
-                          </Link>
+                          </Link> */}
                         </>
                       ) : null}
                       {isAdmin && session?.user?.status === 'active' && (
@@ -362,7 +374,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                   <span className="block text-sm text-gray-300 cursor-not-allowed">Training</span>
                   <span className="block text-sm text-gray-300 cursor-not-allowed">Dashboard</span>
                   <span className="block text-sm text-gray-300 cursor-not-allowed">Marketing</span>
-                  <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span>
+                  {/* <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span> */}
                 </>
               ) : (
                 <>
@@ -404,18 +416,18 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                           >
                             Marketing
                           </Link>
-                          <Link
+                          {/* <Link
                             href="/cpa-legal"
                             className={`block text-sm ${pathname === '/cpa-legal' ? 'text-blue-500' : 'text-gray-700'} hover:text-blue-500`}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             CPA/Legal
-                          </Link>
+                          </Link> */}
                         </>
                       ) : (
                         <>
                           <span className="block text-sm text-gray-300 cursor-not-allowed">Marketing</span>
-                          <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span>
+                          {/* <span className="block text-sm text-gray-300 cursor-not-allowed">CPA/Legal</span> */}
                         </>
                       )}
                     </>

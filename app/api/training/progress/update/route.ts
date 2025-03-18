@@ -6,12 +6,12 @@ export async function POST(request: Request) {
   try {
     // Authenticate user
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return new NextResponse('Unauthorized', { status: 401 });
+    if (!session || !session.user?.accessToken) {
+      return NextResponse.json({ error: 'Unauthorized: Missing or invalid session' }, { status: 401 });
     }
 
     // Parse request body
-    const { videoId, completed, questionsCompleted } = await request.json();
+    const { videoId, completed, questionsCompleted, totalQuestions } = await request.json();
 
     // Validate request data
     if (!videoId || typeof completed !== 'boolean') {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Only allow setting questionsCompleted to 2 when explicitly provided
-    const normalizedQuestionsCompleted = questionsCompleted ?? (completed ? 2 : 0);
+    const normalizedQuestionsCompleted = questionsCompleted === totalQuestions ? totalQuestions : Number(questionsCompleted);
 
     // Send request to PHP API
     const phpApiUrl =

@@ -89,7 +89,8 @@ export default function TrainingPage() {
       return;
     }
     
-    if (allCorrect && currentVideo.questions.length > 0) {
+    // If there are no questions, mark video as completed immediately
+    if (currentVideo.questions.length === 0 || (allCorrect && currentVideo.questions.length > 0)) {
       setIncorrectAttempt(false);
       
       try {
@@ -100,7 +101,7 @@ export default function TrainingPage() {
           body: JSON.stringify({
             videoId: currentVideo.id,
             completed: true,
-            questionsCompleted: true
+            questionsCompleted: Number(currentVideo.questions.length)
           }),
         });
 
@@ -402,33 +403,10 @@ export default function TrainingPage() {
                               },
                               onStateChange: async (event: YT.PlayerEvent) => {
                                 if (event.data === window.YT.PlayerState.ENDED) {
-                                  try {
-                                    const response = await fetch('/api/training/progress/update', {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                      },
-                                      body: JSON.stringify({
-                                        videoId: currentVideo.id,
-                                        completed: true,
-                                        questionsCompleted: false
-                                      })
-                                    });
-                                    
-                                    if (response.ok) {
-                                      const updatedProgress = progress.map(p =>
-                                        p.videoId === currentVideo.id
-                                          ? { ...p, completed: true }
-                                          : p
-                                      );
-                                      setProgress(updatedProgress);
-                                      setShowQuestions(true);
-                                      setSelectedAnswers([]);
-                                      setIncorrectAttempt(false);
-                                    }
-                                  } catch (error) {
-                                    console.error('Error updating video progress:', error);
-                                  }
+                                  // Only show questions after video ends, don't update progress yet
+                                  setShowQuestions(true);
+                                  setSelectedAnswers([]);
+                                  setIncorrectAttempt(false);
                                 }
                               }
                             }
@@ -443,27 +421,22 @@ export default function TrainingPage() {
                       }}
                     />
                   ) : (
+
+
                     <video
                       src={currentVideo.videoUrl}
                       className="w-full h-[200px] sm:h-[300px] md:h-[400px] lg:h-[500px] rounded"
                       controls
 
                       onEnded={() => {
+                        // Only show questions after video ends, don't update progress yet
                         setShowQuestions(true);
-                        // Mark video as completed
-                        fetch('/api/training/progress/update', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            videoId: currentVideo.id,
-                            completed: true,
-                            questionsCompleted: false
-                          })
-                        });
+                        setSelectedAnswers([]);
+                        setIncorrectAttempt(false);
                       }}
                     />
+
+                    
                   )}
                 </div>
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg flex justify-between items-start">
@@ -481,6 +454,8 @@ export default function TrainingPage() {
                       )} */}
                     </div>
                   </div>
+
+
                   {incorrectAttempt && (
                     <button
                       onClick={() => {
@@ -496,18 +471,23 @@ export default function TrainingPage() {
                       <span>Rewatch Video</span>
                     </button>
                   )}
+
+
                 </div>
               </>
             ) : (
+
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-4">Quiz for {currentVideo.title}</h2>
                 {currentVideo.questions.map((question, qIndex) => {
                   const correctIndex = question.correctAnswer ? question.correctAnswer.charCodeAt(0) - 'A'.charCodeAt(0) : -1;
                   const videoProgress = progress.find((p) => p.videoId === currentVideo.id);
-                  const isQuizCompleted = videoProgress?.questionsCompleted === 2;
+                  const isQuizCompleted = videoProgress?.questionsCompleted === currentVideo.questions.length;
                   const isAnswerSubmitted = incorrectAttempt || isQuizCompleted;
                   
                   return (
+
+
                     <div key={question.id} className="space-y-4">
                       <p className="font-medium">{question.question}</p>
                       <div className="space-y-2">
@@ -549,9 +529,15 @@ export default function TrainingPage() {
                       </div>
                     </div>
                   );
+
+
                 })}
+
+
                 {selectedAnswers.length === currentVideo.questions.length && !progress.find(p => p.videoId === currentVideo.id)?.questionsCompleted && (
                   <div className="space-y-4">
+
+
                     <button
                       onClick={handleQuizSubmission}
                       className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -584,7 +570,8 @@ export default function TrainingPage() {
                         </div>
                       </div>
                     )}
-                
+
+
 
                   </div>
                 )}

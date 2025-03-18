@@ -12,7 +12,7 @@ export async function GET() {
 
     // Validate user access token
     if (!session.user.accessToken) {
-      return NextResponse.json({ error: 'Invalid access token' }, { status: 401 });    
+      return NextResponse.json({ error: 'Invalid access token' }, { status: 401 });
     }
 
     // Fetch user's training progress from PHP backend with increased timeout
@@ -20,7 +20,7 @@ export async function GET() {
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout
 
     try {
-      const apiUrl = 
+      const apiUrl =
         process.env.NODE_ENV === "development"
           ? "http://localhost:8000/api/rest-api/training/TrainingApi.php"
           : "https://admin.lucrumindustries.com/api/rest-api/training/TrainingApi.php";
@@ -40,13 +40,11 @@ export async function GET() {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Check if response is HTML (indicating server error)
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/html')) {
           throw new Error('Server configuration error: Expected JSON response');
         }
 
-        // Try to parse error as JSON, fallback to status text if not possible
         let errorMessage;
         try {
           const error = await response.json();
@@ -57,30 +55,30 @@ export async function GET() {
         throw new Error(errorMessage);
       }
 
-      // Safely parse JSON response
       let progressData;
       try {
         progressData = await response.json();
-        
+
         // Validate and process the progress data
         if (Array.isArray(progressData)) {
           let lastCompletedOrder = -1;
-          
+
           progressData = progressData.map(item => {
             const questionsCompleted = parseInt(item.questionsCompleted, 10) || 0;
+            const totalQuestions = parseInt(item.totalQuestions, 10) || 0;
             const orderNumber = parseInt(item.orderNumber, 10);
-            const isCompleted = questionsCompleted === 2;
-            
-            // Update lastCompletedOrder if this video is completed
+
+            // Ensure completion logic is accurate
+            const isCompleted =
+              (totalQuestions > 0 && questionsCompleted === totalQuestions) || 
+              item.completed === "1"; // Mark only if DB says it's completed
+
             if (isCompleted) {
               lastCompletedOrder = Math.max(lastCompletedOrder, orderNumber);
             }
-            
-            // A video is unlocked if:
-            // 1. It's the first video (orderNumber === 1)
-            // 2. The previous video is completed (lastCompletedOrder >= orderNumber - 1)
+
             const isUnlocked = orderNumber === 1 || lastCompletedOrder >= orderNumber - 1;
-            
+
             return {
               ...item,
               completed: isCompleted ? "1" : "0",
@@ -110,7 +108,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching training progress:', error);
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Internal Server Error',
         details: error instanceof Error ? error.stack : undefined
       },

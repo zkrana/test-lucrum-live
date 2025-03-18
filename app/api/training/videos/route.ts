@@ -19,6 +19,7 @@ interface ApiVideo {
     type: string;
     answer: string;
   }[];
+  totalQuestions: number
 }
 
 interface FormattedVideo {
@@ -38,6 +39,7 @@ interface FormattedVideo {
     type: string;
     correctAnswer: string;
   }[];
+  totalQuestions: number
 }
 
 export async function GET() {
@@ -108,7 +110,8 @@ export async function GET() {
         orderNumber: q.orderNumber,
         type: q.type,
         correctAnswer: q.answer
-      })) || []
+      })) || [],
+      totalQuestions: Number(video.totalQuestions),  // Ensure it's a number
     }));
 
     return NextResponse.json(formattedVideos);

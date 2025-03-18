@@ -1,24 +1,26 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { Tab } from '@headlessui/react';
 import { FcGoogle } from 'react-icons/fc';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Home() {
   const { status } = useSession();
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
-
+  const pathname = usePathname(); // Correct way to get the pathname
+  
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && pathname === '/') {
       router.push('/training');
     }
-  }, [status, router]);
+  }, [status, pathname, router]);
 
   if (status === 'loading') {
     return (
@@ -170,6 +172,9 @@ export default function Home() {
                       required
                       className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
+                    <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500 mt-2 inline-block">
+                      Forgot Password?
+                    </Link>
                   </div>
                   {errorMessage && (
                     <div className="mt-2 text-sm text-red-600">

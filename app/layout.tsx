@@ -14,7 +14,7 @@ const manrope = Manrope({
   adjustFontFallback: true
 });
 
-const publicPaths = ['/', '/terms', '/privacy'];
+const publicPaths = ['/', '/terms', '/privacy','/forgot-password','/reset-password'];
 
 export const metadata = {
   title: 'Lucrum Industries',

@@ -9,6 +9,9 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [referralStats, setReferralStats] = useState({ totalClicks: 0, uniqueClicks: 0, referralCode: '' });
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [copyTimeout, setCopyTimeout] = useState<NodeJS.Timeout>();
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.status === "pending") {
@@ -22,9 +25,62 @@ export default function DashboardPage() {
         setLoading(false);
         return;
       }
+      fetchReferralStats();
       setLoading(false);
     }
   }, [status, router, session]);
+
+  const fetchReferralStats = async () => {
+    try {
+      const response = await fetch('/api/referral/stats', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch referral stats');
+      }
+
+      const data = await response.json();
+      setReferralStats(data);
+    } catch (error) {
+      console.error('Error fetching referral stats:', error);
+    }
+  };
+
+  const handleCopyClick = async () => {
+    const referralLink = `${window.location.origin}?ref=${referralStats.referralCode}`;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopySuccess(true);
+      
+      if (copyTimeout) {
+        clearTimeout(copyTimeout);
+      }
+      
+      const timeout = setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+      
+      setCopyTimeout(timeout);
+
+      // Track click
+      await fetch('/api/referral/click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          referrerId: session?.user?.id
+        })
+      });
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -81,24 +137,14 @@ export default function DashboardPage() {
                 <input
                   type="text"
                   readOnly
-                  value={`${window.location.origin}?ref=${session?.user?.id}`}
+                  value={`${window.location.origin}?ref=${referralStats.referralCode}`}
                   className="w-full bg-transparent text-gray-600 focus:outline-none"
                 />
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}?ref=${session?.user?.id}`);
-                    const button = document.getElementById('copyButton');
-                    if (button) {
-                      button.innerHTML = '<span class="flex items-center"><svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!</span>';
-                      setTimeout(() => {
-                        button.innerHTML = 'Copy';
-                      }, 2000);
-                    }
-                  }}
-                  id="copyButton"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105"
+                  onClick={handleCopyClick}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105"
                 >
-                  Copy
+                  {copySuccess ? 'Copied!' : 'Copy'}
                 </button>
               </div>
             </div>
@@ -109,6 +155,17 @@ export default function DashboardPage() {
               </svg>
               <p>Your unique referral link will be tracked automatically</p>
             </div>
+
+            {/* <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Clicks</p>
+                <p className="text-2xl font-bold text-gray-900">{referralStats.totalClicks}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Unique Clicks</p>
+                <p className="text-2xl font-bold text-gray-900">{referralStats.uniqueClicks}</p>
+              </div>
+            </div> */}
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {useRouter} from 'next/navigation';
 
 interface CPADocument {
   id: string;
@@ -55,6 +56,12 @@ export default function CPALegalPage() {
 
     fetchDocuments();
   }, []);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push('/dashboard');
+  }, [router]);
 
   const handlePdfView = (doc: CPADocument) => {
     setPdfError(null);
