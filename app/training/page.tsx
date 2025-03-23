@@ -27,8 +27,18 @@ interface VideoQuestion {
 
 interface VideoProgress {
   videoId: string;
-  completed: boolean;
+  completed: string;
   questionsCompleted: number;
+  totalQuestions: number;
+  isLocked: boolean;
+  questions?: {
+    id: string;
+    question: string;
+    options: string[];
+    orderNumber: number;
+    type: string;
+    correctAnswer: string;
+  }[];
 }
 
 export default function TrainingPage() {
@@ -45,7 +55,7 @@ export default function TrainingPage() {
 
   const currentVideo = videos[currentVideoIndex];
   const totalVideos = videos.length;
-  const completedVideos = progress.filter(p => p.completed && p.questionsCompleted).length;
+  const completedVideos = progress.filter(p => p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted >= p.totalQuestions)).length;
 
   useEffect(() => {
     const initPlayer = () => {
@@ -55,11 +65,121 @@ export default function TrainingPage() {
             window.ytPlayer = event.target;
           },
           onStateChange: async (event: YT.PlayerEvent) => {
+            console.log(`Video state changed: ${event.data}`, {
+              videoId: currentVideo.id,
+              title: currentVideo.title,
+              hasQuestions: currentVideo.questions?.length > 0,
+              questionsCount: currentVideo.questions?.length || 0
+            });
+            
             if (event.data === window.YT.PlayerState.ENDED) {
-              // Only show questions after video completion, don't mark as completed yet
-              setShowQuestions(true);
-              setSelectedAnswers([]);
-              setIncorrectAttempt(false);
+              console.log('Video ended, checking if it has questions:', {
+                videoId: currentVideo.id,
+                hasQuestions: currentVideo.questions?.length > 0
+              });
+              
+              // If video has no questions, mark it as completed directly
+              if (!currentVideo.questions || currentVideo.questions.length === 0) {
+                console.log('No questions for this video, marking as completed');
+                try {
+                  const response = await fetch('/api/training/progress/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      videoId: currentVideo.id,
+                      completed: true,
+                      questionsCompleted: 0,
+                      totalQuestions: 0
+                    }),
+                  });
+            
+                  if (!response.ok) {
+                    throw new Error('Failed to update progress');
+                  }
+            
+                  // Fetch updated progress
+                  const updatedProgressResponse = await fetch('/api/training/progress');
+                  if (updatedProgressResponse.ok) {
+                    const updatedProgressData = await updatedProgressResponse.json();
+                    // Force a rerender by creating a new array
+                    setProgress([...updatedProgressData]);
+                    
+                    // Check if this is the last video or if all videos are completed
+                    const allVideosCompleted = updatedProgressData.every((p: VideoProgress) => 
+                      p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted >= p.totalQuestions));
+                    
+                    // Show completion modal if this is the last video or all videos are completed
+                    if (allVideosCompleted || currentVideoIndex === videos.length - 1) {
+                      // Show final completion message
+                      const finalMessage = document.createElement('div');
+                      finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]';
+                      finalMessage.style.position = 'fixed';
+                      finalMessage.style.top = '0';
+                      finalMessage.style.left = '0';
+                      finalMessage.style.right = '0';
+                      finalMessage.style.bottom = '0';
+                      finalMessage.innerHTML = `
+                        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+                          <div class="text-center" style="display: flex; flex-direction: column; gap: 10px;">
+                            
+                          <div style="margin: 0 auto; display: block;" className="mx-auto block">
+                          <svg width="86" height="86" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M43 0.125C34.5201 0.125 26.2307 2.63958 19.1799 7.35074C12.1292 12.0619 6.63379 18.7581 3.38868 26.5924C0.143577 34.4268 -0.705491 43.0476 0.94885 51.3645C2.60319 59.6814 6.68664 67.321 12.6828 73.3172C18.679 79.3134 26.3186 83.3968 34.6355 85.0512C42.9525 86.7055 51.5732 85.8564 59.4076 82.6113C67.242 79.3662 73.9381 73.8708 78.6493 66.8201C83.3604 59.7693 85.875 51.4799 85.875 43C85.875 31.6288 81.3578 20.7234 73.3172 12.6828C65.2766 4.64217 54.3712 0.125 43 0.125ZM36.875 60.1194L21.5625 44.8069L26.4319 39.9375L36.875 50.3806L59.5681 27.6875L64.4559 32.5446L36.875 60.1194Z" fill="#0075E2"/>
+                              </svg>
+                          </div>
+
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+                            <p class="text-gray-600 mb-6">You've successfully completed all training videos! You now have full access to the dashboard.</p>
+                            <div class="flex items-center justify-center">
+                              <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onclick="window.location.href='/dashboard'">Go to Dashboard</button>
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                      document.body.appendChild(finalMessage);
+                      // Prevent scrolling when modal is shown
+                      document.body.style.overflow = 'hidden';
+                      // Add click handler to close modal when clicking outside
+                      finalMessage.addEventListener('click', (e) => {
+                        if (e.target === finalMessage) {
+                          document.body.removeChild(finalMessage);
+                          document.body.style.overflow = '';
+                          window.location.href = '/dashboard';
+                        }
+                      });
+                      return;
+                    }
+                    
+                    // Move to next video if available
+                    if (currentVideoIndex < videos.length - 1) {
+                      const nextVideo = videos[currentVideoIndex + 1];
+                      const nextVideoProgress = updatedProgressData.find(p => p.videoId === nextVideo.id);
+                      const isNextVideoAccessible = !nextVideoProgress?.isLocked;
+                      
+                      if (isNextVideoAccessible) {
+                        setCurrentVideoIndex(currentVideoIndex + 1);
+                        // Reset video player for the next video but don't autoplay
+                        if (window.ytPlayer) {
+                          // Load the video but don't play it automatically
+                          window.ytPlayer.cueVideoById(nextVideo.videoUrl.split('v=')[1]);
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error updating progress:', error);
+                }
+              } else {
+                setShowQuestions(true);
+                setSelectedAnswers([]);
+                setIncorrectAttempt(false);
+                // Stop the video from playing again
+                if (window.ytPlayer) {
+                  window.ytPlayer.stopVideo();
+                }
+                // Prevent any further processing for videos with questions
+                return;
+              }
             }
           }
         }
@@ -74,7 +194,7 @@ export default function TrainingPage() {
     }
 
     window.onYouTubeIframeAPIReady = initPlayer;
-  }, [currentVideo?.id, currentVideo?.questions?.length, progress, setProgress, setShowQuestions, setSelectedAnswers, setIncorrectAttempt]);
+  }, [currentVideo, currentVideoIndex, videos]);
 
   const handleQuizSubmission = async (): Promise<void> => {
     const allCorrect = currentVideo.questions.every(
@@ -90,7 +210,7 @@ export default function TrainingPage() {
     }
     
     // If there are no questions, mark video as completed immediately
-    if (currentVideo.questions.length === 0 || (allCorrect && currentVideo.questions.length > 0)) {
+    if (!currentVideo.questions || currentVideo.questions.length === 0 || (allCorrect && currentVideo.questions.length > 0)) {
       setIncorrectAttempt(false);
       
       try {
@@ -101,7 +221,8 @@ export default function TrainingPage() {
           body: JSON.stringify({
             videoId: currentVideo.id,
             completed: true,
-            questionsCompleted: Number(currentVideo.questions.length)
+            questionsCompleted: Number(currentVideo.questions.length),
+            totalQuestions: Number(currentVideo.questions.length)
           }),
         });
 
@@ -111,15 +232,18 @@ export default function TrainingPage() {
   
         // Fetch the updated progress
         const updatedProgressResponse = await fetch('/api/training/progress');
+        
         if (updatedProgressResponse.ok) {
           const updatedProgressData = await updatedProgressResponse.json();
           setProgress(updatedProgressData);
   
           setShowQuestions(false);
   
-          // Check if this was the last video and all questions are completed
-          const allVideosCompleted = updatedProgressData.every((p: VideoProgress) => p.completed && p.questionsCompleted);
-          if (allVideosCompleted) {
+          // Check if this was the last video and all videos are completed (with their questions if they have any)
+          const allVideosCompleted = updatedProgressData.every((p: VideoProgress) => p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted === Number(p.totalQuestions)));
+          
+          // Show completion modal if all videos are completed or if this is the last video
+          if (allVideosCompleted || currentVideoIndex === videos.length - 1) {
             // Show final completion message
             const finalMessage = document.createElement('div');
             finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]';
@@ -163,7 +287,12 @@ export default function TrainingPage() {
           // Move to next video if available
           if (currentVideoIndex < videos.length - 1) {
             setCurrentVideoIndex(currentVideoIndex + 1);
+            // Reset video player for the next video but don't autoplay
+            if (window.ytPlayer) {
+              window.ytPlayer.cueVideoById(videos[currentVideoIndex + 1].videoUrl.split('v=')[1]);
+            }
           }
+        
         }
       } catch (error) {
         console.error('Error updating progress:', error);
@@ -234,8 +363,16 @@ export default function TrainingPage() {
         setVideos(sortedVideos);
         setProgress(progressData);
     
-        const firstIncompleteIndex = progressData.findIndex((p: VideoProgress) => !p.completed || !p.questionsCompleted);
-        setCurrentVideoIndex(firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex);
+        const firstIncompleteIndex = progressData.findIndex((p: VideoProgress) => 
+          p.completed !== "1" || (p.totalQuestions > 0 && p.questionsCompleted < p.totalQuestions)
+        );
+        const selectedIndex = firstIncompleteIndex === -1 ? 0 : firstIncompleteIndex;
+        setCurrentVideoIndex(selectedIndex);
+        
+        // Initialize YouTube player with the correct video
+        if (window.ytPlayer && sortedVideos[selectedIndex]) {
+          window.ytPlayer.cueVideoById(sortedVideos[selectedIndex].videoUrl.split('v=')[1]);
+        }
     
       } catch (error) {
         setError('Failed to load training videos. Please try again.');
@@ -251,16 +388,22 @@ export default function TrainingPage() {
   const handleVideoSelect = (index: number): void => {
     // Only allow selecting videos that are unlocked
     const previousVideosCompleted = index === 0 || progress.slice(0, index).every(
-      (p) => p.completed && p.questionsCompleted
+      (p: VideoProgress) => p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted >= p.totalQuestions)
     );
-    const currentVideoProgress = progress.find((p) => p.videoId === videos[index]?.id);
-    const isVideoAccessible = previousVideosCompleted || (currentVideoProgress?.completed && currentVideoProgress?.questionsCompleted);
+    const currentVideoProgress = progress.find((p: VideoProgress) => p.videoId === videos[index]?.id);
+    const isVideoAccessible = previousVideosCompleted || (currentVideoProgress?.completed === "1" && 
+      (currentVideoProgress.totalQuestions === 0 || currentVideoProgress.questionsCompleted >= currentVideoProgress.totalQuestions));
 
     if (isVideoAccessible) {
       setCurrentVideoIndex(index);
       setShowQuestions(false);
       setSelectedAnswers([]);
       setIncorrectAttempt(false);
+
+      if (window.ytPlayer) {
+        window.ytPlayer.cueVideoById(videos[index].videoUrl.split('v=')[1]);
+      }
+
     }
   };
 
@@ -297,6 +440,7 @@ export default function TrainingPage() {
 
 
   if (!session?.user?.hasDashboardAccess || session?.user?.status === "pending") {
+
     return (
       <div className="md:min-h-[calc(100vh-151px)] flex flex-col items-center justify-center bg-gray-50">
         <div className="max-w-md w-full mx-auto p-8 bg-white rounded-xl shadow-lg text-center">
@@ -330,24 +474,26 @@ export default function TrainingPage() {
 
   return (
     <div className="w-full min-h-screen bg-gray-100">
+
       {/* Progress Bar */}
+      
       <div className="w-full p-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-gray-700">Learning in Progress: {Math.round((progress.filter(p => p.completed && p.questionsCompleted).length / videos.length) * 100)}%</h3>
+            <h3 className="text-lg font-semibold text-gray-700">Learning in Progress: {Math.round((progress.filter(p => p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted === p.totalQuestions)).length / videos.length) * 100)}%</h3>
           </div>
           <div className="w-full h-[15px] bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-[15px] bg-[#0075E2] rounded-full transition-all duration-300"
               style={{
-                width: `${(progress.filter(p => p.completed && p.questionsCompleted).length / videos.length) * 100}%`
+                width: `${(progress.filter(p => p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted === p.totalQuestions)).length / videos.length) * 100}%`
               }}
             />
           </div>
           {/* <div className="flex justify-between mt-2">
             {videos.map((video, index) => {
               const videoProgress = progress.find(p => p.videoId === video.id);
-              const isCompleted = videoProgress?.completed && videoProgress?.questionsCompleted;
+              const isCompleted = videoProgress?.completed === "1" && videoProgress?.questionsCompleted;
               const isCurrent = index === currentVideoIndex;
               
               return (
@@ -371,12 +517,22 @@ export default function TrainingPage() {
      <div className='flex flex-col lg:flex-row lg:mt-8 mt-4'>
        {/* Left side - Video Player or Quiz */}
        <div className="flex-1 rounded-[20px] p-4 !pt-0 lg:p-6 !pl-0">
+
+        
         {currentVideo && (
+
+
           <div className="bg-white rounded-lg lg:rounded-[20px] shadow-lg p-6">
-            {!showQuestions ? (
+
+
+{!showQuestions ? (
               <>
                 <div className="aspect-w-16 aspect-h-9">
+
+
                   {currentVideo.videoUrl.includes('youtube.com') ? (
+
+
                     <iframe
                       src={`${currentVideo.videoUrl.includes('watch?v=') ? 
                         currentVideo.videoUrl.replace('watch?v=', 'embed/') : 
@@ -402,11 +558,132 @@ export default function TrainingPage() {
                                 window.ytPlayer = event.target;
                               },
                               onStateChange: async (event: YT.PlayerEvent) => {
+                                console.log(`Video state changed: ${event.data}`, {
+                                  videoId: currentVideo.id,
+                                  title: currentVideo.title,
+                                  hasQuestions: currentVideo.questions?.length > 0,
+                                  questionsCount: currentVideo.questions?.length || 0
+                                });
+                                
                                 if (event.data === window.YT.PlayerState.ENDED) {
-                                  // Only show questions after video ends, don't update progress yet
-                                  setShowQuestions(true);
-                                  setSelectedAnswers([]);
-                                  setIncorrectAttempt(false);
+                                  console.log('Video ended, checking if it has questions:', {
+                                    videoId: currentVideo.id,
+                                    hasQuestions: currentVideo.questions?.length > 0
+                                  });
+                                  
+                                  // If video has no questions, mark it as completed directly
+                                  if (!currentVideo.questions || currentVideo.questions.length === 0) {
+                                    console.log('No questions for this video, marking as completed');
+                                    try {
+                                      const response = await fetch('/api/training/progress/update', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          videoId: currentVideo.id,
+                                          completed: true,
+                                          questionsCompleted: 0,
+                                          totalQuestions: 0
+                                        }),
+                                      });
+                                
+                                      if (!response.ok) {
+                                        throw new Error('Failed to update progress');
+                                      }
+                                
+                                      // Fetch updated progress
+                                      const updatedProgressResponse = await fetch('/api/training/progress');
+                                      if (updatedProgressResponse.ok) {
+                                        const updatedProgressData = await updatedProgressResponse.json();
+                                        // Force a rerender by creating a new array
+                                        setProgress([...updatedProgressData]);
+                                        
+                                        // Check if this is the last video or if all videos are completed
+                                        const allVideosCompleted = updatedProgressData.every((p: VideoProgress) => 
+                                          p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted >= p.totalQuestions));
+                                        
+                                        // Show completion modal if this is the last video or all videos are completed
+                                        if (allVideosCompleted || currentVideoIndex === videos.length - 1) {
+                                          // Show final completion message
+                                          const finalMessage = document.createElement('div');
+                                          finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]';
+                                          finalMessage.style.position = 'fixed';
+                                          finalMessage.style.top = '0';
+                                          finalMessage.style.left = '0';
+                                          finalMessage.style.right = '0';
+                                          finalMessage.style.bottom = '0';
+                                          finalMessage.innerHTML = `
+                                            <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+                                              <div class="text-center" style="display: flex; flex-direction: column; gap: 10px;">
+                                                
+                                              <div style="margin: 0 auto; display: block;" className="mx-auto block">
+                                              <svg width="86" height="86" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                  <path d="M43 0.125C34.5201 0.125 26.2307 2.63958 19.1799 7.35074C12.1292 12.0619 6.63379 18.7581 3.38868 26.5924C0.143577 34.4268 -0.705491 43.0476 0.94885 51.3645C2.60319 59.6814 6.68664 67.321 12.6828 73.3172C18.679 79.3134 26.3186 83.3968 34.6355 85.0512C42.9525 86.7055 51.5732 85.8564 59.4076 82.6113C67.242 79.3662 73.9381 73.8708 78.6493 66.8201C83.3604 59.7693 85.875 51.4799 85.875 43C85.875 31.6288 81.3578 20.7234 73.3172 12.6828C65.2766 4.64217 54.3712 0.125 43 0.125ZM36.875 60.1194L21.5625 44.8069L26.4319 39.9375L36.875 50.3806L59.5681 27.6875L64.4559 32.5446L36.875 60.1194Z" fill="#0075E2"/>
+                                                </svg>
+                                            </div>
+
+                                              <h2 class="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+                                              <p class="text-gray-600 mb-6">You've successfully completed all training videos! You now have full access to the dashboard.</p>
+                                              <div class="flex items-center justify-center">
+                                                <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onclick="window.location.href='/dashboard'">Go to Dashboard</button>
+                                              </div>
+                                            </div>
+                                          `;
+                                          document.body.appendChild(finalMessage);
+                                          // Prevent scrolling when modal is shown
+                                          document.body.style.overflow = 'hidden';
+                                          // Add click handler to close modal when clicking outside
+                                          finalMessage.addEventListener('click', (e) => {
+                                            if (e.target === finalMessage) {
+                                              document.body.removeChild(finalMessage);
+                                              document.body.style.overflow = '';
+                                              window.location.href = '/dashboard';
+                                            }
+                                          });
+                                          return;
+                                        }
+                                        
+                                        // Move to next video if available
+                                        if (currentVideoIndex < videos.length - 1) {
+                                          const nextVideo = videos[currentVideoIndex + 1];
+                                          const nextVideoProgress = updatedProgressData.find(p => p.videoId === nextVideo.id);
+                                          const isNextVideoAccessible = !nextVideoProgress?.isLocked;
+                                          
+                                          if (isNextVideoAccessible) {
+                                            // Check if next video has questions and reload page if it does
+                                            // Don't reload for the last video
+                                            const hasQuestions = nextVideo.questions && nextVideo.questions.length > 0;
+                                            if (hasQuestions && currentVideoIndex < videos.length - 2) {
+                                              console.log('Next video has questions, reloading page to ensure proper rendering');
+                                              window.location.reload();
+                                              return;
+                                            }
+                                            
+                                            setCurrentVideoIndex(currentVideoIndex + 1);
+                                            // Reset video player for the next video but don't autoplay
+                                            if (window.ytPlayer) {
+                                              // Load the video but don't play it automatically
+                                              window.ytPlayer.cueVideoById(nextVideo.videoUrl.split('v=')[1]);
+                                            }
+                                          }
+                                        }
+                                      }
+                                    } catch (error) {
+                                      console.error('Error updating progress:', error);
+                                    }
+                                  } else {
+                                    // For videos with questions, show the questions but don't mark as completed yet
+                                    // We'll only mark it as completed after the questions are answered correctly
+                                    console.log('Video has questions, showing question UI without updating completion status');
+                                    setShowQuestions(true);
+                                    setSelectedAnswers([]);
+                                    setIncorrectAttempt(false);
+                                    // Stop the video from playing again
+                                    if (window.ytPlayer) {
+                                      window.ytPlayer.stopVideo();
+                                    }
+                                    // Prevent any further processing for videos with questions
+                                    return;
+                                  }
                                 }
                               }
                             }
@@ -420,6 +697,8 @@ export default function TrainingPage() {
                         }
                       }}
                     />
+
+
                   ) : (
 
 
@@ -427,18 +706,117 @@ export default function TrainingPage() {
                       src={currentVideo.videoUrl}
                       className="w-full h-[200px] sm:h-[300px] md:h-[400px] lg:h-[500px] rounded"
                       controls
+                      loop={false}
+                      onEnded={async () => {
+                        // If video has no questions, mark it as completed directly
+                        if (!currentVideo.questions || currentVideo.questions.length === 0) {
+                          try {
+                            const response = await fetch('/api/training/progress/update', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                videoId: currentVideo.id,
+                                completed: true,
+                                questionsCompleted: 0,
+                                totalQuestions: 0
+                              }),
+                            });
 
-                      onEnded={() => {
-                        // Only show questions after video ends, don't update progress yet
-                        setShowQuestions(true);
-                        setSelectedAnswers([]);
-                        setIncorrectAttempt(false);
+                            if (!response.ok) {
+                              throw new Error('Failed to update progress');
+                            }
+
+                            // Fetch updated progress
+                            const updatedProgressResponse = await fetch('/api/training/progress');
+                            
+                            if (updatedProgressResponse.ok) {
+                              const updatedProgressData = await updatedProgressResponse.json();
+                              setProgress(updatedProgressData);
+
+                              // Check if this is the last video or if all videos are completed
+                              const allVideosCompleted = updatedProgressData.every((p) => 
+                                p.completed === "1" && (p.totalQuestions === 0 || p.questionsCompleted >= p.totalQuestions));
+                              
+                              // Show completion modal if this is the last video or all videos are completed
+                              if (allVideosCompleted || currentVideoIndex === videos.length - 1) {
+                                // Show final completion message
+                                const finalMessage = document.createElement('div');
+                                finalMessage.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]';
+                                finalMessage.style.position = 'fixed';
+                                finalMessage.style.top = '0';
+                                finalMessage.style.left = '0';
+                                finalMessage.style.right = '0';
+                                finalMessage.style.bottom = '0';
+                                finalMessage.innerHTML = `
+                                  <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+                                    <div class="text-center" style="display: flex; flex-direction: column; gap: 10px;">
+                                      <div style="margin: 0 auto; display: block;" className="mx-auto block">
+                                        <svg width="86" height="86" viewBox="0 0 86 86" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M43 0.125C34.5201 0.125 26.2307 2.63958 19.1799 7.35074C12.1292 12.0619 6.63379 18.7581 3.38868 26.5924C0.143577 34.4268 -0.705491 43.0476 0.94885 51.3645C2.60319 59.6814 6.68664 67.321 12.6828 73.3172C18.679 79.3134 26.3186 83.3968 34.6355 85.0512C42.9525 86.7055 51.5732 85.8564 59.4076 82.6113C67.242 79.3662 73.9381 73.8708 78.6493 66.8201C83.3604 59.7693 85.875 51.4799 85.875 43C85.875 31.6288 81.3578 20.7234 73.3172 12.6828C65.2766 4.64217 54.3712 0.125 43 0.125ZM36.875 60.1194L21.5625 44.8069L26.4319 39.9375L36.875 50.3806L59.5681 27.6875L64.4559 32.5446L36.875 60.1194Z" fill="#0075E2"/>
+                                        </svg>
+                                      </div>
+                                      <h2 class="text-2xl font-bold text-gray-900 mb-2">Congratulations!</h2>
+                                      <p class="text-gray-600 mb-6">You've successfully completed all training videos! You now have full access to the dashboard.</p>
+                                      <div class="flex items-center justify-center">
+                                        <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onclick="window.location.href='/dashboard'">Go to Dashboard</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                `;
+                                document.body.appendChild(finalMessage);
+                                document.body.style.overflow = 'hidden';
+                                finalMessage.addEventListener('click', (e) => {
+                                  if (e.target === finalMessage) {
+                                    document.body.removeChild(finalMessage);
+                                    document.body.style.overflow = '';
+                                    window.location.href = '/dashboard';
+                                  }
+                                });
+                                return;
+                              }
+
+                              // Move to next video if available
+                              if (currentVideoIndex < videos.length - 1) {
+                                const nextVideo = videos[currentVideoIndex + 1];
+                                // Check if next video has questions and reload page if it does
+                                // Don't reload for the last video
+                                const hasQuestions = nextVideo.questions && nextVideo.questions.length > 0;
+                                if (hasQuestions && currentVideoIndex < videos.length - 2) {
+                                  console.log('Next video has questions, reloading page to ensure proper rendering');
+                                  window.location.reload();
+                                  return;
+                                }
+                                
+                                setCurrentVideoIndex(currentVideoIndex + 1);
+                                // Reset video player for the next video but don't autoplay
+                                if (window.ytPlayer) {
+                                  window.ytPlayer.cueVideoById(nextVideo.videoUrl.split('v=')[1]);
+                                }
+                              }
+                            }
+
+                            
+                          } catch (error) {
+                            console.error('Error updating progress:', error);
+                          }
+                        } else {
+                          // For videos with questions, show the questions but don't mark as completed yet
+                          // We'll only mark it as completed after the questions are answered correctly
+                          setShowQuestions(true);
+                          setSelectedAnswers([]);
+                          setIncorrectAttempt(false);
+                          
+                        }
                       }}
                     />
 
                     
                   )}
+
+
                 </div>
+
+
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg flex justify-between items-start">
                   <div className="flex items-center space-x-4">
                     <div className="p-3 bg-blue-100 rounded-lg">
@@ -475,10 +853,15 @@ export default function TrainingPage() {
 
                 </div>
               </>
+
+
             ) : (
 
               <div className="space-y-6">
                 <h2 className="text-2xl font-bold mb-4">Quiz for {currentVideo.title}</h2>
+
+
+
                 {currentVideo.questions.map((question, qIndex) => {
                   const correctIndex = question.correctAnswer ? question.correctAnswer.charCodeAt(0) - 'A'.charCodeAt(0) : -1;
                   const videoProgress = progress.find((p) => p.videoId === currentVideo.id);
@@ -577,6 +960,8 @@ export default function TrainingPage() {
                 )}
               </div>
             )}
+
+           
           </div>
         )}
       </div>
@@ -586,10 +971,12 @@ export default function TrainingPage() {
         <h3 className="text-xl font-bold mb-6">Training Videos</h3>
         {/* Add overall progress indicator */}
         <div className="mb-6">
+          
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-600">Overall Progress</span>
             <span className="text-sm font-medium">{completedVideos} of {totalVideos} completed</span>
           </div>
+
           <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 rounded-full transition-all duration-300"
@@ -597,14 +984,17 @@ export default function TrainingPage() {
             />
           </div>
         </div>
+
+
         <div className="space-y-4">
+
+
           {videos.map((video, index) => {
             const videoProgress = progress.find((p) => p.videoId === video.id);
-            const isCompleted = videoProgress?.completed && videoProgress?.questionsCompleted;
-            const previousVideoProgress = index > 0 ? progress.find(p => p.videoId === videos[index - 1]?.id) : null;
-            const isLocked = index > 0 && (!previousVideoProgress?.completed || !previousVideoProgress?.questionsCompleted);
+            const hasQuestions = video.questions && video.questions.length > 0; 
+            const isCompleted = videoProgress?.completed === "1" && (hasQuestions ? videoProgress?.questionsCompleted >= video.questions.length : true);
+            const isLocked = videoProgress?.isLocked || false;
             const isCurrent = index === currentVideoIndex;
-        
             return (
               <button
                 key={video.id}
@@ -638,7 +1028,10 @@ export default function TrainingPage() {
                 </div>
               </button>
             );
+
           })}
+
+
         </div>
       </div>
      </div>

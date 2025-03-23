@@ -13,13 +13,25 @@ export async function POST(request: Request) {
     // Parse request body
     const { videoId, completed, questionsCompleted, totalQuestions } = await request.json();
 
+    // Add debug logs
+    console.log('Training progress update request received:', {
+      videoId,
+      completed,
+      questionsCompleted,
+      totalQuestions,
+      hasQuestions: totalQuestions > 0
+    });
+
     // Validate request data
     if (!videoId || typeof completed !== 'boolean') {
       return new NextResponse('Invalid request body', { status: 400 });
     }
 
-    // Only allow setting questionsCompleted to 2 when explicitly provided
-    const normalizedQuestionsCompleted = questionsCompleted === totalQuestions ? totalQuestions : Number(questionsCompleted);
+    // Handle videos with no questions and normalize questionsCompleted
+    const normalizedQuestionsCompleted = totalQuestions === 0 ? 0 : Number(questionsCompleted);
+    // For videos with questions, only mark as completed if all questions are answered
+    const shouldMarkCompleted = totalQuestions === 0 ? completed : (completed && normalizedQuestionsCompleted >= totalQuestions);
+    const isLocked = !shouldMarkCompleted;
 
     // Send request to PHP API
     const phpApiUrl =
@@ -39,8 +51,11 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         videoId,
-        completed,
+        completed: shouldMarkCompleted,
         questionsCompleted: normalizedQuestionsCompleted,
+        timestamp: new Date().toISOString(),
+        preventDuplicates: true,
+        isLocked
       }),
     });
 

@@ -42,11 +42,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   
         // Ensure totalQuestions is treated as a number
         const completedVideos = progress.filter(video => 
-          video.completed === "1" && video.questionsCompleted === Number(video.totalQuestions)
+          video.completed === "1" && (video.totalQuestions === 0 || video.questionsCompleted === Number(video.totalQuestions))
         );
   
         // Training is complete if ALL videos meet the criteria
-        setHasCompletedTraining(completedVideos.length === progress.length);
+        const totalVideos = progress.length;
+        const completedCount = completedVideos.length;
+        setHasCompletedTraining(completedCount === totalVideos);
   
       } catch (error) {
         console.error('Error checking training progress:', error);

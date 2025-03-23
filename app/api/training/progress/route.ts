@@ -69,15 +69,22 @@ export async function GET() {
             const orderNumber = parseInt(item.orderNumber, 10);
 
             // Ensure completion logic is accurate
-            const isCompleted =
-              (totalQuestions > 0 && questionsCompleted === totalQuestions) || 
-              item.completed === "1"; // Mark only if DB says it's completed
+            // Mark as completed if:
+            // 1. For videos without questions (totalQuestions === 0): video must be marked as watched in DB (completed = "1")
+            // 2. For videos with questions: video must be watched AND all questions completed
+            const isVideoWatched = item.completed === "1";
+            const hasQuestions = totalQuestions > 0;
+            const allQuestionsCompleted = hasQuestions ? questionsCompleted >= totalQuestions : isVideoWatched;
+            
+            // Enhanced completion logic that handles videos with no questions correctly
+            const isCompleted = hasQuestions ? (isVideoWatched && allQuestionsCompleted) : isVideoWatched;
 
+            // Update lastCompletedOrder based on completion status
             if (isCompleted) {
               lastCompletedOrder = Math.max(lastCompletedOrder, orderNumber);
             }
 
-            const isUnlocked = orderNumber === 1 || lastCompletedOrder >= orderNumber - 1;
+            const isUnlocked = orderNumber === 1 || (lastCompletedOrder >= orderNumber - 1);
 
             return {
               ...item,

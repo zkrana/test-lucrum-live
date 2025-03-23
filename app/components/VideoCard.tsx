@@ -14,18 +14,39 @@ export default function VideoCard({ title, description, videoUrl, thumbnailUrl, 
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
-  const handleVideoClick = () => {
-    setIsPlaying(true);
+  const handleVideoClick = React.useCallback(() => {
     if (videoRef.current) {
-      videoRef.current.play();
+      videoRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch((error) => {
+          console.error('Error playing video:', error);
+          setIsPlaying(false);
+        });
     }
-  };
+  }, []);
 
-  const handleVideoEnded = () => {
-    if (onVideoComplete) {
-      onVideoComplete();
+  const handleVideoEnded = React.useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
     }
-  };
+    setIsPlaying(false);
+    // Ensure onVideoComplete is called with a slight delay to allow state updates
+    setTimeout(() => {
+      onVideoComplete?.();
+    }, 100);
+  }, [onVideoComplete]);
+
+  // Reset video state when unmounting
+  React.useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+      setIsPlaying(false);
+    };
+  }, []);
 
   return (
     <div className="relative rounded-lg overflow-hidden shadow-lg bg-white">
@@ -54,12 +75,13 @@ export default function VideoCard({ title, description, videoUrl, thumbnailUrl, 
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-cover"
-              autoPlay
               muted={!isPlaying}
-              loop={!isPlaying}
+              loop={false}
               playsInline
               controls={isPlaying}
               onEnded={handleVideoEnded}
+              autoPlay={false}
+              preload="metadata"
             />
             {!isPlaying && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 transition-opacity group-hover:bg-opacity-60">
