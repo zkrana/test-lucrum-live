@@ -157,6 +157,15 @@ export default function TrainingPage() {
                       const isNextVideoAccessible = !nextVideoProgress?.isLocked;
                       
                       if (isNextVideoAccessible) {
+                        // Check if next video has questions and reload page if it does
+                        // Don't reload for the last video
+                        const hasQuestions = nextVideo.questions && nextVideo.questions.length > 0;
+                        if (hasQuestions && currentVideoIndex < videos.length - 1) {
+                          console.log('Next video has questions, reloading page to ensure proper rendering');
+                          window.location.reload();
+                          return;
+                        }
+                        
                         setCurrentVideoIndex(currentVideoIndex + 1);
                         // Reset video player for the next video but don't autoplay
                         if (window.ytPlayer) {
@@ -652,7 +661,7 @@ export default function TrainingPage() {
                                             // Check if next video has questions and reload page if it does
                                             // Don't reload for the last video
                                             const hasQuestions = nextVideo.questions && nextVideo.questions.length > 0;
-                                            if (hasQuestions && currentVideoIndex < videos.length - 2) {
+                                            if (hasQuestions && currentVideoIndex < videos.length - 1) {
                                               console.log('Next video has questions, reloading page to ensure proper rendering');
                                               window.location.reload();
                                               return;
@@ -781,7 +790,7 @@ export default function TrainingPage() {
                                 // Check if next video has questions and reload page if it does
                                 // Don't reload for the last video
                                 const hasQuestions = nextVideo.questions && nextVideo.questions.length > 0;
-                                if (hasQuestions && currentVideoIndex < videos.length - 2) {
+                                if (hasQuestions && currentVideoIndex < videos.length - 1) {
                                   console.log('Next video has questions, reloading page to ensure proper rendering');
                                   window.location.reload();
                                   return;
